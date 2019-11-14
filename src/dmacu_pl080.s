@@ -12,7 +12,7 @@
 	.long (\src)
 	.long (\dst)
 	.long (\lli)
-	.long (0x00E00000 + \size)
+	.long (0x0C000000 + \size)
 	.endm
 	
 	/* Patch srcaddr[7:0] of the descriptor given by dst */
@@ -27,12 +27,12 @@
 	
 	/* Patch dstaddr[7:0] of the descriptor given by dst */
 	.macro Dma_PatchDstLo8 dst, src, lli	
-	Dma_ByteCopy (\dst+5), (\src), 1, \lli
+	Dma_ByteCopy (\dst+4), (\src), 1, \lli
 	.endm
 
 	/* Patch dstaddr[15:0] of the descriptor given by dst */
 	.macro Dma_PatchDstHi8 dst, src, lli	
-	Dma_ByteCopy (\dst+6), (\src), 1, \lli
+	Dma_ByteCopy (\dst+5), (\src), 1, \lli
 	.endm
 
 	/*
@@ -43,7 +43,7 @@
 	 */
 	.macro Dma_Sbox8 dst, src, sbox, lli
 	// Step 1: Load the source byte from src and substitute it into the sbox address
-	Dma_PatchDstLo8 LDma_Sbox8_Lookup\@, \src, LDma_Sbox8_Lookup\@
+	Dma_PatchSrcLo8 LDma_Sbox8_Lookup\@, \src, LDma_Sbox8_Lookup\@
 	
 	// Step 2: Read the byte from the (patched) sbox location and store to dst
 LDma_Sbox8_Lookup\@:
@@ -107,14 +107,17 @@ Lut_Temporary:
 	.space 0x100, 0x00
 
 	// Register file (240x 8-bit, last 16 bytes are used by Cpu_PC and Cpu_NextPC)
+	.global Cpu_Regfile
 Cpu_Regfile:
 	.space 0x100, 0x00
 
 	// Current program counter
+	.global Cpu_PC
 Cpu_PC:
 	.long 0
 
 	// Next program counter
+	.global Cpu_NextPC
 Cpu_NextPC:
 	.long 0
 
@@ -125,7 +128,7 @@ Cpu_NextPC:
 	 * double-sized temp LUT (and by doing an in-place copy in the temp lut)
 	 */
 	.section ".dmacu.rodata", "a", "progbits"
-	.align 8
+	.align 16
 Lut_Identity:
 	/* Identity lookup table */
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
@@ -200,24 +203,18 @@ Lut_Carry:
 	.byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
 	.byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
 
+Lit_5A: .byte 0x5A
+Lit_A5: .byte 0xA5
+
 	/**
 	 * WIP: Test code
 	 */
 	.section ".dmacu.ucode", "aw", "progbits"
-Dma_UCode:
-	Dma_Add8    (Cpu_Regfile+0), (Cpu_Regfile+1), (Cpu_Regfile+2), 1f
-1:  Dma_Add8Imm (Cpu_Regfile+3), (Cpu_Regfile+4), 5, 1f
-1:  Dma_Add8Imm (Cpu_Regfile+6), (Cpu_Regfile+7), 5, 0
-	
-	/**
-	 * WIP: Test code
-	 *
-	 * Typcial test build: arm-none-eabi-gcc -x assembler-with-cpp -mcpu=cortex-m33 -e DMACU_GetUCode -nostartfiles dmacu_pl080.s
-	 */
-	.text
-	.global DMACU_GetUCode
-DMACU_GetUCode:
-	MOVW r0, #:LOWER16:Dma_UCode
-	MOVT r0, #:UPPER16:Dma_UCode
-	BX lr
-
+	.global Dma_UCode_Start
+	.global Dma_UCode_End
+Dma_UCode_Start:
+	Dma_ByteCopy (Cpu_Regfile+0), Lit_5A, 1, 1f
+1:	Dma_ByteCopy (Cpu_Regfile+1), Lit_A5, 1, 1f
+1:	Dma_Sbox8    (Cpu_Regfile+2), (Cpu_Regfile+0), Lut_Identity, 1f
+1:  Dma_Add8     (Cpu_Regfile+3), (Cpu_Regfile+1), (Cpu_Regfile+2), 0
+Dma_UCode_End:
