@@ -110,29 +110,55 @@ LDma_Sub8Imm_LookupSum\@:
 	Dma_Sbox8       \dst, \src1, Lut_Temporary, \lli
 	.endm
 
+	/*
+	 * Add 8-bit immediate imm8 to 16-bit value (little endian) at memory operand src1 and store the result in dst1
+	 *
+	 * This operation uses Lut_Temporary and Cpu_Scratchpad for processing
+	 */
+	.macro Dma_Add16Imm dst, src1, imm8, lli
+	// Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the 
+	//   immediate of the upper part of the addition
+	Dma_CarryFromAdd8Imm Cpu_Scratchpad, \src1, \imm8, LDma_Add16Imm_AddLo8\@
+
+	// Step 2: Perform the 8-bit addition in the lower byte
+LDma_Add16Imm_AddLo8\@:
+	Dma_Add8Imm (\dst + 0), (\src1 + 0), \imm8, LDma_Add16Imm_AddHi8\@
+
+	// Step 3: Perform the 8-bit addition in the upper byte (immediate is patched with the carry lookup value)
+LDma_Add16Imm_AddHi8\@:
+	Dma_Add8    (\dst + 1), (\src1 + 1), Cpu_Scratchpad, \lli
+	.endm
+
 	/**
 	 * Workspace (bss-like)
 	 */
 	.section ".dmacu.bss", "aw", "nobits"
-	.align 8
-
+	
 	// Temporary LUT / scratchpad memory
+	.align 8
 Lut_Temporary:
 	.space 0x100, 0x00
 
 	// Register file (240x 8-bit, last 16 bytes are used by Cpu_PC and Cpu_NextPC)
 	.global Cpu_Regfile
+	.align 2
 Cpu_Regfile:
 	.space 0x100, 0x00
 
 	// Current program counter
 	.global Cpu_PC
+	.align 2
 Cpu_PC:
 	.long 0
 
 	// Next program counter
 	.global Cpu_NextPC
+	.align 2
 Cpu_NextPC:
+	.long 0
+
+	// Scratchpad for temporary values
+Cpu_Scratchpad:
 	.long 0
 
 	/**
@@ -181,7 +207,10 @@ Lut_Identity2:
 	.byte 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef
 	.byte 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff
 
-	/* Carry */
+	/*
+	 * Carry LUT
+	 *
+	 */
 Lut_Carry:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -236,5 +265,6 @@ Dma_UCode_Start:
 1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x01, 1f
 1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x10, 1f
 1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 5), (Cpu_Regfile + 3), 0x0, 1f
-1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 6), (Cpu_Regfile + 3), 0x1, 0
+1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 6), (Cpu_Regfile + 3), 0x3, 1f
+1:  Dma_Add16Imm (Cpu_Regfile+16), (Cpu_Regfile+0), 0xC0, 0
 Dma_UCode_End:
