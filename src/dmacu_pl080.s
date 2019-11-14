@@ -83,6 +83,20 @@ LDma_Add8Imm_LookupSum\@:
 	.endm
 
 	/*
+	 * Add 8-bit immediate imm8 to byte at memory operand src1 and store the carry of the addition in dst.
+	 *
+	 * This operation uses Lut_Temporary for processing
+	 */
+	.macro Dma_CarryFromAdd8Imm dst, src1, imm8, lli	
+	// Step 1: Load the temporary LUT with with the carry LUT offset by imm8 operand
+	Dma_ByteCopy    Lut_Temporary, (Lut_Carry + \imm8), 0x100, LDma_CarryFromAdd8Imm_LookupCarry\@
+
+	// Step 3: Lookup the carry using the temporary LUT (indexed by src2 memory operand)
+LDma_CarryFromAdd8Imm_LookupCarry\@:
+	Dma_Sbox8       \dst, \src1, Lut_Temporary, \lli
+	.endm
+
+	/*
 	 * Subtract 8-bit immediate imm8 from byte at memory operand src1 and store the result in dst.
 	 *
 	 * This operation uses Lut_Temporary for processing
@@ -220,5 +234,7 @@ Dma_UCode_Start:
 1:  Dma_Sub8Imm  (Cpu_Regfile+4), (Cpu_Regfile+3), 0xC0, 1f
 1:  Dma_Sub8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x03, 1f
 1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x01, 1f
-1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x10, 0
+1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x10, 1f
+1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 5), (Cpu_Regfile + 3), 0x0, 1f
+1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 6), (Cpu_Regfile + 3), 0x1, 0
 Dma_UCode_End:
