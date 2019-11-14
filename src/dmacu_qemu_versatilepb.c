@@ -65,7 +65,7 @@ void DumpCpuState(const char *prefix)
 	for (unsigned i = 0; i < (Dma_UCode_End - Dma_UCode_Start) / 4u; ++i)
 	{
 		printf("UCODE[%03X]: %08X %08X %08X %08X\n",
-			4u * i,
+			16u * i,
 			(unsigned) Dma_UCode_Start[4u * i + 0u],
 			(unsigned) Dma_UCode_Start[4u * i + 1u],
 			(unsigned) Dma_UCode_Start[4u * i + 2u],

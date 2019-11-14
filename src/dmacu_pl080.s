@@ -216,5 +216,9 @@ Dma_UCode_Start:
 	Dma_ByteCopy (Cpu_Regfile+0), Lit_5A, 1, 1f
 1:	Dma_ByteCopy (Cpu_Regfile+1), Lit_A5, 1, 1f
 1:	Dma_Sbox8    (Cpu_Regfile+2), (Cpu_Regfile+0), Lut_Identity, 1f
-1:  Dma_Add8     (Cpu_Regfile+3), (Cpu_Regfile+1), (Cpu_Regfile+2), 0
+1:  Dma_Add8     (Cpu_Regfile+3), (Cpu_Regfile+1), (Cpu_Regfile+2), 1f
+1:  Dma_Sub8Imm  (Cpu_Regfile+4), (Cpu_Regfile+3), 0xC0, 1f
+1:  Dma_Sub8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x03, 1f
+1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x01, 1f
+1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x10, 0
 Dma_UCode_End:
