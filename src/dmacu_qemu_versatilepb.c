@@ -62,6 +62,7 @@ void DumpCpuState(const char *prefix)
 	
 	printf("\n");
 
+#if defined(DEBUG_DUMP_UCODE) && (DEBUG_DUMP_UCODE != 0)
 	for (unsigned i = 0; i < (Dma_UCode_End - Dma_UCode_Start) / 4u; ++i)
 	{
 		printf("UCODE[%03X]: %08X %08X %08X %08X\n",
@@ -71,17 +72,19 @@ void DumpCpuState(const char *prefix)
 			(unsigned) Dma_UCode_Start[4u * i + 2u],
 			(unsigned) Dma_UCode_Start[4u * i + 3u]);
 	}
+#endif
+
 	printf("--- end %s ---\n", prefix);
 }
 
 int main(void)
 {
 	// Dump the initial CPU state	
-	DumpCpuState("initial cpu state");
+	//DumpCpuState("initial cpu state");
 
 	// Enable the DMA controller
 	PL080_DMA_REG(0x030) |= UINT32_C(0x00000001);
-	
+
 	// Setup DMA channel #0 (using the first descriptor)
 	PL080_DMA_REG(0x100) = Dma_UCode_Start[0];
 	PL080_DMA_REG(0x104) = Dma_UCode_Start[1];
@@ -99,6 +102,9 @@ int main(void)
 	}
 	
 	printf("dma: transfers done\n");
+
+	// Set the channel configuration for channel 0 (and enable)
+	PL080_DMA_REG(0x110) = UINT32_C(0x0000000000);
 
 	DumpCpuState("final cpu state");
 

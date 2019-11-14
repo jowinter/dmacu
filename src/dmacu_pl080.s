@@ -256,7 +256,7 @@ Lit_A5: .byte 0xA5
 	.global Dma_UCode_Start
 	.global Dma_UCode_End
 Dma_UCode_Start:
-	Dma_ByteCopy (Cpu_Regfile+0), Lit_5A, 1, 1f
+	Dma_Add8     (Cpu_Regfile+0), (Cpu_Regfile+0), Lit_5A, 1f
 1:	Dma_ByteCopy (Cpu_Regfile+1), Lit_A5, 1, 1f
 1:	Dma_Sbox8    (Cpu_Regfile+2), (Cpu_Regfile+0), Lut_Identity, 1f
 1:  Dma_Add8     (Cpu_Regfile+3), (Cpu_Regfile+1), (Cpu_Regfile+2), 1f
