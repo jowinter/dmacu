@@ -6,7 +6,7 @@
  * This file is licensed under the MIT License. See LICENSE in the root directory
  * of the prohect for the license text.
  */
- 
+
 /**
  * @file
  * @brief Minimal host application for the DMACU emulator
@@ -14,21 +14,18 @@
  * This host application can be used on QEMU's versatilepb board model (ARM926EJ-S CPU).
  *
  * Typical build command:
- *   arm-none-eabi-gcc -o dmacu_qemu_verstilepb.elf -Wall -O2 -g -specs=rdimon.specs -mcpu=arm926ej-s -marm dmacu_qemu_verstilepb.c dmacu_pl080.s
+ *   arm-none-eabi-gcc -o dmacu_qemu_versatilepb.elf -Wall -O2 -g -specs=rdimon.specs -mcpu=arm926ej-s -marm dmacu_qemu_versatilepb.c dmacu_pl080.s
  *
  * Typical QEMU invocation:
  *   qemu-system-arm.exe -machine versatilepb -semihosting -nographic -kernel dmacu_qemu_verstilepb.elf
- * 
+ *
  */
- 
+
 #include <stdint.h>
 #include <stdio.h>
 
-// Start of DMA "microcode"
-extern uint32_t Dma_UCode_Start[];
-
-// End of DMA "microcode" (first word following the DMA microcode)
-extern uint32_t Dma_UCode_End[];
+// Start of DMA "microcode" for the virtual CPU
+extern uint32_t Dma_UCode_CPU[];
 
 // Register file of the simulated CPU
 extern volatile uint8_t  Cpu_Regfile[256u];
@@ -39,6 +36,19 @@ extern volatile uint32_t Cpu_PC;
 // Next program counter of the simulated CPU
 extern volatile uint32_t Cpu_NextPC;
 
+// Current instruction
+extern volatile uint32_t Cpu_CurrentOPC;
+
+// Current A operand
+extern volatile uint16_t Cpu_CurrentA;
+
+// Current B operand
+extern volatile uint16_t Cpu_CurrentB;
+
+// Current Z result
+extern volatile uint16_t Cpu_CurrentZ;
+
+
 // Base address of the PL080 DMAC
 #define PL080_DMA_BASE_ADDR UINT32_C(0x10130000)
 
@@ -47,66 +57,100 @@ extern volatile uint32_t Cpu_NextPC;
 
 void DumpCpuState(const char *prefix)
 {
-	printf("--- begin %s ---\n", prefix);
-	printf("        PC: %08X\n    NextPC: %08X", (unsigned) Cpu_PC, (unsigned) Cpu_NextPC);
+	printf("%s        PC: %08X  NextPC: %08X\n"
+		"%s       OPC: %08X\n"
+		"%s        rA: %04X  rB: %04X  rZ: %04X",
+		prefix, (unsigned) Cpu_PC, (unsigned) Cpu_NextPC,
+		prefix, (unsigned) Cpu_CurrentOPC,
+		prefix, (unsigned) Cpu_CurrentA, (unsigned) Cpu_CurrentB, (unsigned) Cpu_CurrentZ);
 
 	for (unsigned i = 0u; i < 256u; ++i)
 	{
 		if ((i % 16u) == 0u)
 		{
-			printf("\n  REGS[%02X]:", (unsigned) i);
+			printf("\n%s  REGS[%02X]:", prefix, (unsigned) i);
 		}
-		
+
 		printf(" %02X", (unsigned) Cpu_Regfile[i]);
 	}
-	
+
 	printf("\n");
-
-#if defined(DEBUG_DUMP_UCODE) && (DEBUG_DUMP_UCODE != 0)
-	for (unsigned i = 0; i < (Dma_UCode_End - Dma_UCode_Start) / 4u; ++i)
-	{
-		printf("UCODE[%03X]: %08X %08X %08X %08X\n",
-			16u * i,
-			(unsigned) Dma_UCode_Start[4u * i + 0u],
-			(unsigned) Dma_UCode_Start[4u * i + 1u],
-			(unsigned) Dma_UCode_Start[4u * i + 2u],
-			(unsigned) Dma_UCode_Start[4u * i + 3u]);
-	}
-#endif
-
-	printf("--- end %s ---\n", prefix);
 }
 
-int main(void)
+
+// Static test program
+static const uint32_t gTestProgram[] =
 {
-	// Dump the initial CPU state	
-	//DumpCpuState("initial cpu state");
+	UINT32_C(0x00000000), // +0x000 NOP
+	UINT32_C(0x00000000), // +0x004 NOP
+	UINT32_C(0x00000000), // +0x008 NOP
+	UINT32_C(0x00000000), // +0x00C NOP
+	UINT32_C(0x1E123456)  // +0x010 UND #0x123456
+};
+
+// Setup the execution context for the test program
+static void SetupTestProgram(void)
+{
+	// Setup the initial program counter
+	Cpu_PC = (uint32_t) &gTestProgram[0];
+
+	// Fill the register file with a test pattern
+	for (uint32_t i = 0u; i < 256u; ++i)
+	{
+		Cpu_Regfile[i] = (uint8_t) i;
+	}
+
+	// Setup A, B and Z with dummy value (will be cleared by CPU)
+	Cpu_CurrentA = UINT16_C(0xBAD0);
+	Cpu_CurrentB = UINT16_C(0xBAD1);
+	Cpu_CurrentZ = UINT16_C(0xBAD2);
+}
+
+// Start the virtual CPU
+static void StartVirtualCPU(void)
+{
+	// Dump the initial CPU state (after test program setup)
+	DumpCpuState("vcpu[init]");
 
 	// Enable the DMA controller
 	PL080_DMA_REG(0x030) |= UINT32_C(0x00000001);
 
 	// Setup DMA channel #0 (using the first descriptor)
-	PL080_DMA_REG(0x100) = Dma_UCode_Start[0];
-	PL080_DMA_REG(0x104) = Dma_UCode_Start[1];
-	PL080_DMA_REG(0x108) = Dma_UCode_Start[2];
-	PL080_DMA_REG(0x10C) = Dma_UCode_Start[3];
+	PL080_DMA_REG(0x100) = Dma_UCode_CPU[0];
+	PL080_DMA_REG(0x104) = Dma_UCode_CPU[1];
+	PL080_DMA_REG(0x108) = Dma_UCode_CPU[2];
+	PL080_DMA_REG(0x10C) = Dma_UCode_CPU[3];
 
 	// Set the channel configuration for channel 0 (and enable)
 	PL080_DMA_REG(0x110) = UINT32_C(0x0000000001);
 
-	printf("dma: channel #0 started\n");
-	
+	printf("vcpu[run]   started on dma channel #0\n");
+}
+
+// Wait until the virtual CPU is done (DMA idle)
+static void WaitForVirtualCPU(void)
+{
 	while (UINT32_C(0) != (PL080_DMA_REG(0x01C) & UINT32_C(0x00000008)))
 	{
 		// Wait for the DMA controller
 	}
-	
-	printf("dma: transfers done\n");
 
-	// Set the channel configuration for channel 0 (and enable)
+	printf("vcpu[run]   dma transfers done (virtual cpu is stopped)\n");
+
+	// Clear configuration for DMA channel #0 and stop.
 	PL080_DMA_REG(0x110) = UINT32_C(0x0000000000);
 
-	DumpCpuState("final cpu state");
+	DumpCpuState("vcpu[exit]");
+}
+
+int main(void)
+{
+	// Setup the test program
+	SetupTestProgram();
+
+	// Run the virtual the CPU
+	StartVirtualCPU();
+	WaitForVirtualCPU();
 
 	return 0;
 }

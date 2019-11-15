@@ -14,24 +14,24 @@
 	.long (\lli)
 	.long (0x0C000000 + \size)
 	.endm
-	
+
 	/* Patch srcaddr[7:0] of the descriptor given by dst */
-	.macro Dma_PatchSrcLo8 dst, src, lli	
+	.macro Dma_PatchSrcLo8 dst, src, lli
 	Dma_ByteCopy (\dst+0), (\src), 1, \lli
 	.endm
-	
+
 	/* Patch srcaddr[15:8] of the descriptor given by dst */
-	.macro Dma_PatchSrcHi8 dst, src, lli	
+	.macro Dma_PatchSrcHi8 dst, src, lli
 	Dma_ByteCopy (\dst+1), (\src), 1, \lli
 	.endm
-	
+
 	/* Patch dstaddr[7:0] of the descriptor given by dst */
-	.macro Dma_PatchDstLo8 dst, src, lli	
+	.macro Dma_PatchDstLo8 dst, src, lli
 	Dma_ByteCopy (\dst+4), (\src), 1, \lli
 	.endm
 
 	/* Patch dstaddr[15:0] of the descriptor given by dst */
-	.macro Dma_PatchDstHi8 dst, src, lli	
+	.macro Dma_PatchDstHi8 dst, src, lli
 	Dma_ByteCopy (\dst+5), (\src), 1, \lli
 	.endm
 
@@ -44,12 +44,12 @@
 	.macro Dma_Sbox8 dst, src, sbox, lli
 	// Step 1: Load the source byte from src and substitute it into the sbox address
 	Dma_PatchSrcLo8 LDma_Sbox8_Lookup\@, \src, LDma_Sbox8_Lookup\@
-	
+
 	// Step 2: Read the byte from the (patched) sbox location and store to dst
 LDma_Sbox8_Lookup\@:
 	Dma_ByteCopy    \dst, \sbox, 1, \lli
 	.endm
-	
+
 	/*
 	 * Add two bytes from memory operands src1 and src2 and store the result in dst.
 	 *
@@ -73,7 +73,7 @@ LDma_Add8_LookupSum\@:
 	 *
 	 * This operation uses Lut_Temporary for processing
 	 */
-	.macro Dma_Add8Imm dst, src1, imm8, lli	
+	.macro Dma_Add8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the identity LUT offset by imm8 operand
 	Dma_ByteCopy    Lut_Temporary, (Lut_Identity + \imm8), 0x100, LDma_Add8Imm_LookupSum\@
 
@@ -87,7 +87,7 @@ LDma_Add8Imm_LookupSum\@:
 	 *
 	 * This operation uses Lut_Temporary for processing
 	 */
-	.macro Dma_CarryFromAdd8Imm dst, src1, imm8, lli	
+	.macro Dma_CarryFromAdd8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the carry LUT offset by imm8 operand
 	Dma_ByteCopy    Lut_Temporary, (Lut_Carry + \imm8), 0x100, LDma_CarryFromAdd8Imm_LookupCarry\@
 
@@ -101,7 +101,7 @@ LDma_CarryFromAdd8Imm_LookupCarry\@:
 	 *
 	 * This operation uses Lut_Temporary for processing
 	 */
-	.macro Dma_Sub8Imm dst, src1, imm8, lli	
+	.macro Dma_Sub8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the identity LUT (2nd copy) offset by imm8 operand
 	Dma_ByteCopy    Lut_Temporary, (Lut_Identity2 - \imm8), 0x100, LDma_Sub8Imm_LookupSum\@
 
@@ -116,7 +116,7 @@ LDma_Sub8Imm_LookupSum\@:
 	 * This operation uses Lut_Temporary and Cpu_Scratchpad for processing
 	 */
 	.macro Dma_Add16Imm dst, src1, imm8, lli
-	// Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the 
+	// Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the
 	//   immediate of the upper part of the addition
 	Dma_CarryFromAdd8Imm Cpu_Scratchpad, \src1, \imm8, LDma_Add16Imm_AddLo8\@
 
@@ -129,11 +129,24 @@ LDma_Add16Imm_AddHi8\@:
 	Dma_Add8    (\dst + 1), (\src1 + 1), Cpu_Scratchpad, \lli
 	.endm
 
+	/*
+	 * Indirect lookup (switch) with up to 64 entries.
+	 */
+	.macro Dma_TableSwitch64 dst, src, table, lli
+	// Step 1: Patch the lookup address in the switch table
+LDma_TableSwitch_PrepareLookup\@:
+	Dma_Sbox8 (LDma_TableSwitch_DoLookup\@ + 0), \src, Lut_TableSwitch64, LDma_TableSwitch_DoLookup\@
+
+	// Step 2: Read a 4-byte value from the table.
+LDma_TableSwitch_DoLookup\@:
+	Dma_ByteCopy \dst, \table, 4, \lli
+	.endm
+
 	/**
 	 * Workspace (bss-like)
 	 */
 	.section ".dmacu.bss", "aw", "nobits"
-	
+
 	// Temporary LUT / scratchpad memory
 	.align 8
 Lut_Temporary:
@@ -141,20 +154,37 @@ Lut_Temporary:
 
 	// Register file (240x 8-bit, last 16 bytes are used by Cpu_PC and Cpu_NextPC)
 	.global Cpu_Regfile
-	.align 2
 Cpu_Regfile:
 	.space 0x100, 0x00
 
 	// Current program counter
 	.global Cpu_PC
-	.align 2
 Cpu_PC:
 	.long 0
 
 	// Next program counter
 	.global Cpu_NextPC
-	.align 2
 Cpu_NextPC:
+	.long 0
+
+	// Current instruction word
+	.global Cpu_CurrentOPC
+Cpu_CurrentOPC:
+	.long 0
+
+	// Current A operand value
+	.global Cpu_CurrentA
+Cpu_CurrentA:
+	.short 0
+
+	// Current B operand value
+	.global Cpu_CurrentB
+Cpu_CurrentB:
+	.short 0
+
+	// Current Z result value
+	.global Cpu_CurrentZ
+Cpu_CurrentZ:
 	.long 0
 
 	// Scratchpad for temporary values
@@ -187,7 +217,7 @@ Lut_Identity:
 	.byte 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf
 	.byte 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef
 	.byte 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff
-	
+
 	/* Identity lookup table (second copy) */
 Lut_Identity2:
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
@@ -246,25 +276,172 @@ Lut_Carry:
 	.byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
 	.byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
 
+	/*
+	 * Switch-table address generator for up to 64 entries
+	 */
+	.align 8
+Lut_TableSwitch64:
+	.byte 0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20, 0x24, 0x28, 0x2C, 0x30, 0x34, 0x38, 0x3C
+	.byte 0x40, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58, 0x5C, 0x60, 0x64, 0x68, 0x6C, 0x70, 0x74, 0x78, 0x7C
+	.byte 0x80, 0x84, 0x88, 0x8C, 0x90, 0x94, 0x98, 0x9C, 0xA0, 0xA4, 0xA8, 0xAC, 0xB0, 0xB4, 0xB8, 0xBC
+	.byte 0xC0, 0xC4, 0xC8, 0xCC, 0xD0, 0xD4, 0xD8, 0xDC, 0xE0, 0xE4, 0xE8, 0xEC, 0xF0, 0xF4, 0xF8, 0xFC
+
+	/* RFU space */
 Lit_5A: .byte 0x5A
 Lit_A5: .byte 0xA5
 
-	/**
-	 * WIP: Test code
+	/*
+	 * Instruction set decode table
 	 */
-	.section ".dmacu.ucode", "aw", "progbits"
-	.global Dma_UCode_Start
-	.global Dma_UCode_End
-Dma_UCode_Start:
-	Dma_Add8     (Cpu_Regfile+0), (Cpu_Regfile+0), Lit_5A, 1f
-1:	Dma_ByteCopy (Cpu_Regfile+1), Lit_A5, 1, 1f
-1:	Dma_Sbox8    (Cpu_Regfile+2), (Cpu_Regfile+0), Lut_Identity, 1f
-1:  Dma_Add8     (Cpu_Regfile+3), (Cpu_Regfile+1), (Cpu_Regfile+2), 1f
-1:  Dma_Sub8Imm  (Cpu_Regfile+4), (Cpu_Regfile+3), 0xC0, 1f
-1:  Dma_Sub8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x03, 1f
-1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x01, 1f
-1:  Dma_Add8Imm  (Cpu_Regfile+4), (Cpu_Regfile+4), 0x10, 1f
-1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 5), (Cpu_Regfile + 3), 0x0, 1f
-1:  Dma_CarryFromAdd8Imm (Cpu_Regfile + 6), (Cpu_Regfile + 3), 0x3, 1f
-1:  Dma_Add16Imm (Cpu_Regfile+16), (Cpu_Regfile+0), 0xC0, 0
-Dma_UCode_End:
+	.align 8
+Lut_InstructionTable:
+	.long Cpu_OpNop   // 0x00 - NOP
+	.long Cpu_OpUndef // 0x01 - Undefined
+	.long Cpu_OpUndef // 0x02 - Undefined
+	.long Cpu_OpUndef // 0x03 - Undefined
+	.long Cpu_OpUndef // 0x04 - Undefined
+	.long Cpu_OpUndef // 0x05 - Undefined
+	.long Cpu_OpUndef // 0x06 - Undefined
+	.long Cpu_OpUndef // 0x07 - Undefined
+	.long Cpu_OpUndef // 0x08 - Undefined
+	.long Cpu_OpUndef // 0x09 - Undefined
+	.long Cpu_OpUndef // 0x0A - Undefined
+	.long Cpu_OpUndef // 0x0B - Undefined
+	.long Cpu_OpUndef // 0x0C - Undefined
+	.long Cpu_OpUndef // 0x0D - Undefined
+	.long Cpu_OpUndef // 0x0E - Undefined
+	.long Cpu_OpUndef // 0x0F - Undefined
+	.long Cpu_OpUndef // 0x10 - Undefined
+	.long Cpu_OpUndef // 0x11 - Undefined
+	.long Cpu_OpUndef // 0x12 - Undefined
+	.long Cpu_OpUndef // 0x13 - Undefined
+	.long Cpu_OpUndef // 0x14 - Undefined
+	.long Cpu_OpUndef // 0x15 - Undefined
+	.long Cpu_OpUndef // 0x16 - Undefined
+	.long Cpu_OpUndef // 0x17 - Undefined
+	.long Cpu_OpUndef // 0x18 - Undefined
+	.long Cpu_OpUndef // 0x19 - Undefined
+	.long Cpu_OpUndef // 0x1A - Undefined
+	.long Cpu_OpUndef // 0x1B - Undefined
+	.long Cpu_OpUndef // 0x1C - Undefined
+	.long Cpu_OpUndef // 0x1D - Undefined
+	.long Cpu_OpUndef // 0x1E - Undefined
+	.long Cpu_OpUndef // 0x1F - Undefined
+
+	/**********************************************************************************************
+	 *
+	 * DMACU CPU Fetch/Decode/Execute/Writeback Stages
+	 *
+	 **********************************************************************************************/
+
+
+	/* Fetch Stage */
+	.pushsection ".dmacu.cpu.fetch", "a", "progbits"
+Cpu_Fetch.1:
+	// FE.1: Setup source address for instruction fetch
+	Dma_ByteCopy (Cpu_Fetch.2 + 0), Cpu_PC, 4, Cpu_Fetch.2
+
+	// FE.2: Fetch current instruction into opcode buffer
+Cpu_Fetch.2:
+	Dma_ByteCopy Cpu_CurrentOPC, 0, 4, Cpu_Fetch.3
+
+	// FE.3: Generate lower 16 bit of next program counter
+Cpu_Fetch.3:
+	Dma_Add16Imm Cpu_NextPC, Cpu_PC, 4, Cpu_Fetch.4
+
+	// FE.4: Copy upper 16 bit of program counter then link to decode stage
+Cpu_Fetch.4:
+	Dma_ByteCopy (Cpu_NextPC + 2), (Cpu_PC + 2), 2, Cpu_Decode.1
+	.popsection
+
+	/* Decode Stage */
+	.pushsection ".dmacu.cpu.decode", "a", "progbits"
+Cpu_Decode.1:
+	// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
+	//  Major opcode is in CurrentOPC[31:24]
+	//
+	Dma_TableSwitch64 (Cpu_Decode.6 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, Cpu_Decode.2
+
+	// DE.2: Clear the current A and B operand values (use start of Lut_Carry as zero source)
+Cpu_Decode.2:
+	Dma_ByteCopy (Cpu_CurrentA + 0), Lut_Carry, 6, Cpu_Decode.3
+
+	// DE.3: Prepare loading the A operand from Regfile[CurrentOPC[15:8]] (rA)
+Cpu_Decode.3:
+	Dma_PatchSrcLo8 Cpu_Decode.4, (Cpu_CurrentOPC + 1), Cpu_Decode.4
+
+	// DE.4: Load the A operand from Regfile[CurrentOPC[15:8]] (rA)
+Cpu_Decode.4:
+	Dma_ByteCopy Cpu_CurrentA, Cpu_Regfile, 1, Cpu_Decode.5
+
+	// DE.5: Prepare loading the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
+Cpu_Decode.5:
+	Dma_PatchSrcLo8 Cpu_Decode.6, (Cpu_CurrentOPC + 0), Cpu_Decode.6
+
+	// DE.5: Load the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
+	//   Then dispatch to the execute stage (LLI patched by Cpu_Decode.1)
+Cpu_Decode.6:
+	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 1, Cpu_OpUndef
+
+	.popsection
+
+	/* Writeback Stage */
+	.pushsection ".dmacu.cpu.writeback", "a", "progbits"
+Cpu_Writeback:
+
+	// WB.1: Copy NextPC to PC, link to fetch stage
+	Dma_ByteCopy Cpu_PC, Cpu_NextPC, 4, Cpu_Fetch.1
+
+	.popsection
+
+	/**********************************************************************************************
+	 *
+	 * DMACU CPU Opcodes (Execute Stage)
+	 *
+	 **********************************************************************************************/
+	.section ".dmacu.execute", "a", "progbits"
+
+	/*
+	 * NOP       - No Operation
+	 *
+	 *  31  24     15      8      0
+	 * +------+------+------+------+
+	 * | 0x00 | (0)  | (0)  | (0)  |
+	 * +------+------+------+------+
+	 *
+	 * The NOP instruction is implemented as direct link from the decoder's dispatch table to the
+	 * PC writeback stage (No separate DMA descriptors needed).
+	 */
+	.set Cpu_OpNop, Cpu_Writeback
+
+	/*
+	 * UND #imm24 - Undefined Instruction
+	 *
+	 *  31     24     15      8      0
+	 * +---------+------+------+------+
+	 * | 0x1F(*) | (0)  | (0)  | (0)  |
+	 * +---------+------+------+------+
+	 *
+	 * (*) Canonical encoding of the undefined instruction
+	 *
+	 * The UND instruction (or any other undefined instruction encoding) writes the special
+	 * value 0xDEADC0DE to the Cpu_NextPC descriptor and terminates further DMA processing
+	 * (by linking to the NULL descriptor). The instruction itself (and its 24-bit immediate
+	 * operand) are retained in the Cpu_CurrentOPC register and can be used for debugging
+	 * purposes (from the host system).
+	 */
+Cpu_OpUndef:
+	// Copy the 0xDEADC0DE value to Cpu_NextPC, then halt via LLI=0
+	Dma_ByteCopy Cpu_NextPC, Cpu_OpUndef.Lit_DEADCODE, 4, 0x00000000
+
+Cpu_OpUndef.Lit_DEADCODE:
+	.long 0xDEADC0DE
+
+
+	/*
+	 * Export the CPU entrypoint
+	 *
+	 * CPU processing starts at the FE.1 stage.
+	 */
+	.global Dma_UCode_CPU
+	.set Dma_UCode_CPU, Cpu_Fetch.1
