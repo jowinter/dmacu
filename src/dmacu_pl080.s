@@ -157,6 +157,9 @@ Lut_Temporary:
 Cpu_Regfile:
 	.space 0x100, 0x00
 
+	// Guard Zone (catches off by one writes, e.g. if MOV2 is made to r255)
+	.long 0
+
 	// Current program counter
 	.global Cpu_PC
 Cpu_PC:
@@ -295,38 +298,38 @@ Lit_A5: .byte 0xA5
 	 */
 	.align 8
 Lut_InstructionTable:
-	.long Cpu_OpNop   // 0x00 - NOP
-	.long Cpu_OpUndef // 0x01 - Undefined
-	.long Cpu_OpUndef // 0x02 - Undefined
-	.long Cpu_OpUndef // 0x03 - Undefined
-	.long Cpu_OpUndef // 0x04 - Undefined
-	.long Cpu_OpUndef // 0x05 - Undefined
-	.long Cpu_OpUndef // 0x06 - Undefined
-	.long Cpu_OpUndef // 0x07 - Undefined
-	.long Cpu_OpUndef // 0x08 - Undefined
-	.long Cpu_OpUndef // 0x09 - Undefined
-	.long Cpu_OpUndef // 0x0A - Undefined
-	.long Cpu_OpUndef // 0x0B - Undefined
-	.long Cpu_OpUndef // 0x0C - Undefined
-	.long Cpu_OpUndef // 0x0D - Undefined
-	.long Cpu_OpUndef // 0x0E - Undefined
-	.long Cpu_OpUndef // 0x0F - Undefined
-	.long Cpu_OpUndef // 0x10 - Undefined
-	.long Cpu_OpUndef // 0x11 - Undefined
-	.long Cpu_OpUndef // 0x12 - Undefined
-	.long Cpu_OpUndef // 0x13 - Undefined
-	.long Cpu_OpUndef // 0x14 - Undefined
-	.long Cpu_OpUndef // 0x15 - Undefined
-	.long Cpu_OpUndef // 0x16 - Undefined
-	.long Cpu_OpUndef // 0x17 - Undefined
-	.long Cpu_OpUndef // 0x18 - Undefined
-	.long Cpu_OpUndef // 0x19 - Undefined
-	.long Cpu_OpUndef // 0x1A - Undefined
-	.long Cpu_OpUndef // 0x1B - Undefined
-	.long Cpu_OpUndef // 0x1C - Undefined
-	.long Cpu_OpUndef // 0x1D - Undefined
-	.long Cpu_OpUndef // 0x1E - Undefined
-	.long Cpu_OpUndef // 0x1F - Undefined
+	.long Cpu_OpNop     // 0x00 - NOP                                             (No-operation)
+	.long Cpu_OpMovImm  // 0x01 - MOV rZ, #imm8                                   (Move from 8-bit immediate to register pair)
+	.long Cpu_OpMov2Imm // 0x02 - MOV rZ+1:rZ, #imm16                             (Move from 16-bit immediate to register pair)
+	.long Cpu_OpMov2Reg // 0x03 - MOV rZ+1:rZ, rB:rA                              (Move from register pair to register pair)
+	.long Cpu_OpUndef   // 0x04 - (RFU) ADD rZ, rB,  #imm8                        (Add 8-bit immediate)
+	.long Cpu_OpUndef   // 0x05 - (RFU) ADD rZ+1:rZ, #imm16                       (Add 16-bit immediate)
+	.long Cpu_OpUndef   // 0x06 - (RFU) ADD rZ,      rB, rA                       (Add registers)
+	.long Cpu_OpUndef   // 0x07 - (RFU) ADC rZ+1:rZ, rB, rA                       (Add with carry output)
+	.long Cpu_OpUndef   // 0x08 - (RFU) JMP #imm24                                (Jump absolute)
+	.long Cpu_OpUndef   // 0x09 - (RFU) JMP rB:rA+1:rA                            (Jump register indirect)
+	.long Cpu_OpUndef   // 0x0A - (RFU) SNE rZ, rB                                (Skip if not equal)
+	.long Cpu_OpUndef   // 0x0B - (RFU) SEQ rZ, rB                                (Skip if equal)
+	.long Cpu_OpUndef   // 0x0C - (RFU) SNE rZ, #imm8                             (Skip if not equal immediate)
+	.long Cpu_OpUndef   // 0x0D - (RFU) SEQ rZ, #imm8                             (Skip if equal immediate)
+	.long Cpu_OpUndef   // 0x0E - (RFU) NOT rZ, rB                                (Bitwise NOT)
+	.long Cpu_OpUndef   // 0x0F - (RFU) AND rZ, rB, rA                            (Bitwise AND)
+	.long Cpu_OpUndef   // 0x10 - (RFU) OR  rZ, rB, rA                            (Bitwise OR)
+	.long Cpu_OpUndef   // 0x11 - (RFU) EOR rZ, rB, rA                            (Bitwise Exclusive-OR)
+	.long Cpu_OpUndef   // 0x12 - (RFU) ROR rZ, zB, #1                            (Rotate-Right by 1)
+	.long Cpu_OpUndef   // 0x13 - (RFU) ROL rZ, zB, #1                            (Rotate-Left by 1)
+	.long Cpu_OpUndef   // 0x14 - Undefined
+	.long Cpu_OpUndef   // 0x15 - Undefined
+	.long Cpu_OpUndef   // 0x16 - Undefined
+	.long Cpu_OpUndef   // 0x17 - Undefined
+	.long Cpu_OpUndef   // 0x18 - Undefined
+	.long Cpu_OpUndef   // 0x19 - (RFU) LDB rZ, [rB+1:rB:rA+1:rA]                 (Load byte indirect)
+	.long Cpu_OpUndef   // 0x1A - (RFU) STB rZ, [rB+1:rB:rA+1:rA]                 (Store byte indirect)
+	.long Cpu_OpUndef   // 0x1B - (RFU) LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Load half-word indirect)
+	.long Cpu_OpUndef   // 0x1C - (RFU) STH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Store half-word indirect)
+	.long Cpu_OpUndef   // 0x1D - (RFU) LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Load word indirect)
+	.long Cpu_OpUndef   // 0x1E - (RFU) STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Store word indirect)
+	.long Cpu_OpUndef   // 0x1F - UND #imm24
 
 	/**********************************************************************************************
 	 *
@@ -360,7 +363,7 @@ Cpu_Decode.1:
 	// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
 	//  Major opcode is in CurrentOPC[31:24]
 	//
-	Dma_TableSwitch64 (Cpu_Decode.6 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, Cpu_Decode.2
+	Dma_TableSwitch64 (Cpu_Decode.8 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, Cpu_Decode.2
 
 	// DE.2: Clear the current A and B operand values (use start of Lut_Carry as zero source)
 Cpu_Decode.2:
@@ -368,7 +371,7 @@ Cpu_Decode.2:
 
 	// DE.3: Prepare loading the A operand from Regfile[CurrentOPC[15:8]] (rA)
 Cpu_Decode.3:
-	Dma_PatchSrcLo8 Cpu_Decode.4, (Cpu_CurrentOPC + 1), Cpu_Decode.4
+	Dma_PatchSrcLo8 Cpu_Decode.4, (Cpu_CurrentOPC + 0), Cpu_Decode.4
 
 	// DE.4: Load the A operand from Regfile[CurrentOPC[15:8]] (rA)
 Cpu_Decode.4:
@@ -376,20 +379,44 @@ Cpu_Decode.4:
 
 	// DE.5: Prepare loading the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
 Cpu_Decode.5:
-	Dma_PatchSrcLo8 Cpu_Decode.6, (Cpu_CurrentOPC + 0), Cpu_Decode.6
+	Dma_PatchSrcLo8 Cpu_Decode.6, (Cpu_CurrentOPC + 1), Cpu_Decode.6
 
-	// DE.5: Load the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
-	//   Then dispatch to the execute stage (LLI patched by Cpu_Decode.1)
+	// DE.6: Load the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
 Cpu_Decode.6:
-	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 1, Cpu_OpUndef
+	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 1, Cpu_Decode.7
+
+	// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC[23:16]] (rZ)
+Cpu_Decode.7:
+	Dma_PatchSrcLo8 Cpu_Decode.8, (Cpu_CurrentOPC + 2), Cpu_Decode.8
+
+	// DE.8: Load the Z operand from Regfile[CurrentOPC[23:16]] (rB)
+	//   Then dispatch to the execute stage (LLI patched by Cpu_Decode.1)
+Cpu_Decode.8:
+	Dma_ByteCopy Cpu_CurrentZ, Cpu_Regfile, 1, Cpu_OpUndef
 
 	.popsection
 
 	/* Writeback Stage */
 	.pushsection ".dmacu.cpu.writeback", "a", "progbits"
-Cpu_Writeback:
 
-	// WB.1: Copy NextPC to PC, link to fetch stage
+Cpu_Writeback.TwoRegs:
+	// WB.TWO.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
+	Dma_PatchDstLo8 Cpu_Writeback.TwoRegs.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.TwoRegs.Commit
+	
+Cpu_Writeback.TwoRegs.Commit:
+	// WB.TWO.2: Do copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, Cpu_Writeback.PC
+
+Cpu_Writeback.OneReg:
+	// WB.ONE.1: Setup copy from CurrentZ[7:0] to Regfile[rZ]
+	Dma_PatchDstLo8 Cpu_Writeback.OneReg.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.OneReg.Commit
+	
+Cpu_Writeback.OneReg.Commit:
+	// WB.ONE.2: Do copy from CurrentZ[7:0] to Regfile[rZ]
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 1, Cpu_Writeback.PC
+
+Cpu_Writeback.PC:
+	// WB.PC: Copy NextPC to PC, link to fetch stage
 	Dma_ByteCopy Cpu_PC, Cpu_NextPC, 4, Cpu_Fetch.1
 
 	.popsection
@@ -404,7 +431,7 @@ Cpu_Writeback:
 	/*
 	 * NOP       - No Operation
 	 *
-	 *  31  24     15      8      0
+	 *  31  24     16      8      0
 	 * +------+------+------+------+
 	 * | 0x00 | (0)  | (0)  | (0)  |
 	 * +------+------+------+------+
@@ -412,12 +439,55 @@ Cpu_Writeback:
 	 * The NOP instruction is implemented as direct link from the decoder's dispatch table to the
 	 * PC writeback stage (No separate DMA descriptors needed).
 	 */
-	.set Cpu_OpNop, Cpu_Writeback
+	.set Cpu_OpNop, Cpu_Writeback.PC
+
+	/*
+	 * MOV rZ, #imm8 - Move to register from 8-bit immediate
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x01 | (0)  | (0)  | imm8 |
+	 * +------+------+------+------+
+	 */
+Cpu_OpMovImm:
+	// Copy from CurrentOPC[7:0] to CurrentZ, then link to one register writeback
+	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 1, Cpu_Writeback.OneReg
+
+	/*
+	 * MOV rZ+1:rZ, #imm16 - Move to register pair from 16-bit immediate
+	 *
+	 *  31  24     16             0
+	 * +------+------+-------------+
+	 * | 0x02 | rZ   |       imm16 |
+	 * +------+------+-------------+
+	 */
+Cpu_OpMov2Imm:
+	// Copy from CurrentOPC[15:0] to CurrentZ, then link to one register writeback
+	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 2, Cpu_Writeback.TwoRegs
+
+	/*
+	 * MOV2 rZ+1:rZ, rB:rA - Move from register pair to register pair
+	 * MOV  rZ, rA         - (Pseudo-Instruction) Move from register to register (if rB=rZ+1)
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x03 |  rZ  | rB   |  rA  |
+	 * +------+------+------+------+
+	 *
+	 * We only implement 
+	 */
+Cpu_OpMov2Reg:
+	// Copy from CurrentA to CurrentZ{7:0]
+	Dma_ByteCopy (Cpu_CurrentZ + 0), Cpu_CurrentA, 1, Cpu_OpMov2Reg.WriteSecondReg
+
+	// Copy from CurrentB to CurrentZ[15:8]
+Cpu_OpMov2Reg.WriteSecondReg:
+	Dma_ByteCopy (Cpu_CurrentZ + 1), Cpu_CurrentB, 1, Cpu_Writeback.TwoRegs
 
 	/*
 	 * UND #imm24 - Undefined Instruction
 	 *
-	 *  31     24     15      8      0
+	 *  31     24     16      8      0
 	 * +---------+------+------+------+
 	 * | 0x1F(*) | (0)  | (0)  | (0)  |
 	 * +---------+------+------+------+
@@ -436,7 +506,6 @@ Cpu_OpUndef:
 
 Cpu_OpUndef.Lit_DEADCODE:
 	.long 0xDEADC0DE
-
 
 	/*
 	 * Export the CPU entrypoint

@@ -82,10 +82,16 @@ void DumpCpuState(const char *prefix)
 static const uint32_t gTestProgram[] =
 {
 	UINT32_C(0x00000000), // +0x000 NOP
-	UINT32_C(0x00000000), // +0x004 NOP
-	UINT32_C(0x00000000), // +0x008 NOP
-	UINT32_C(0x00000000), // +0x00C NOP
-	UINT32_C(0x1E123456)  // +0x010 UND #0x123456
+
+	// Write "Hello!" into the register file
+	UINT32_C(0x01000048), // +0x004 MOV  r0,    0x48
+	UINT32_C(0x01010065), // +0x008 MOV  r1,    0x65
+	UINT32_C(0x02026C6C), // +0x00C MOV2 r3:r2, 0x6C6C
+	UINT32_C(0x01FF0021), // +0x010 MOV  r255,  0x21
+	UINT32_C(0x01FD006F), // +0x014 MOV  r253,  0x6F
+	UINT32_C(0x03FEFFFD), // +0x018 MOV  r254,  r253
+	UINT32_C(0x0304FFFE), // +0x01C MOV2 r5:r4, r255:r254
+	UINT32_C(0x1F123456)  // +0x010 UND #0x123456
 };
 
 // Setup the execution context for the test program
