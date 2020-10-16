@@ -1,4 +1,5 @@
 /*
+/*
  * Minimal CPU Emulator Powered by the ARM PL080 DMA Controller (dmacu)
  *
  * Copyright (c) 2019 Johannes Winter
@@ -77,6 +78,8 @@ void DumpCpuState(const char *prefix)
 	printf("\n");
 }
 
+__attribute__((__used__))
+char hello[] = "hello";
 
 // Static test program
 static const uint32_t gTestProgram[] =
@@ -91,8 +94,12 @@ static const uint32_t gTestProgram[] =
 	UINT32_C(0x01FD006F), // +0x014 MOV  r253,  0x6F
 	UINT32_C(0x03FEFFFD), // +0x018 MOV  r254,  r253
 	UINT32_C(0x0304FFFE), // +0x01C MOV2 r5:r4, r255:r254
-	UINT32_C(0x1F123456)  // +0x010 UND #0x123456
+	UINT32_C(0x04101155), // +0x020 ADD  r16, r17, #0x55
+
+	UINT32_C(0x1F123456)  // +0x024 UND #0x123456
 };
+
+extern const uint32_t foo[4];
 
 // Setup the execution context for the test program
 static void SetupTestProgram(void)
@@ -145,6 +152,9 @@ static void WaitForVirtualCPU(void)
 
 	// Clear configuration for DMA channel #0 and stop.
 	PL080_DMA_REG(0x110) = UINT32_C(0x0000000000);
+
+	printf("hello (%p): %s\n", hello, hello);
+	//printf("%08x %08x %08x %08x\n", foo[0], foo[1], foo[2], foo[3]);
 
 	DumpCpuState("vcpu[exit]");
 }

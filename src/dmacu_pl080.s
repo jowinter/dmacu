@@ -25,6 +25,16 @@
 	Dma_ByteCopy (\dst+1), (\src), 1, \lli
 	.endm
 
+	/* Patch srcaddr[15:0] of the descriptor given by dst */
+	.macro Dma_PatchSrcLo16 dst, src, lli
+	Dma_ByteCopy (\dst+0), (\src), 2, \lli
+	.endm
+
+	/* Patch srcaddr[31:16] of the descriptor given by dst */
+	.macro Dma_PatchSrcHi16 dst, src, lli
+	Dma_ByteCopy (\dst+2), (\src), 2, \lli
+	.endm
+
 	/* Patch dstaddr[7:0] of the descriptor given by dst */
 	.macro Dma_PatchDstLo8 dst, src, lli
 	Dma_ByteCopy (\dst+4), (\src), 1, \lli
@@ -33,6 +43,16 @@
 	/* Patch dstaddr[15:0] of the descriptor given by dst */
 	.macro Dma_PatchDstHi8 dst, src, lli
 	Dma_ByteCopy (\dst+5), (\src), 1, \lli
+	.endm
+
+	/* Patch dstaddr[15:0] of the descriptor given by dst */
+	.macro Dma_PatchDstLo16 dst, src, lli
+	Dma_ByteCopy (\dst+4), (\src), 2, \lli
+	.endm
+
+	/* Patch dstaddr[31:16] of the descriptor given by dst */
+	.macro Dma_PatchDstHi16 dst, src, lli
+	Dma_ByteCopy (\dst+6), (\src), 2, \lli
 	.endm
 
 	/*
@@ -298,48 +318,51 @@ Lit_A5: .byte 0xA5
 	 */
 	.align 8
 Lut_InstructionTable:
-	.long Cpu_OpNop     // 0x00 - NOP                                             (No-operation)
-	.long Cpu_OpMovImm  // 0x01 - MOV rZ, #imm8                                   (Move from 8-bit immediate to register pair)
-	.long Cpu_OpMov2Imm // 0x02 - MOV rZ+1:rZ, #imm16                             (Move from 16-bit immediate to register pair)
-	.long Cpu_OpMov2Reg // 0x03 - MOV rZ+1:rZ, rB:rA                              (Move from register pair to register pair)
-	.long Cpu_OpUndef   // 0x04 - (RFU) ADD rZ, rB,  #imm8                        (Add 8-bit immediate)
-	.long Cpu_OpUndef   // 0x05 - (RFU) ADD rZ+1:rZ, #imm16                       (Add 16-bit immediate)
-	.long Cpu_OpUndef   // 0x06 - (RFU) ADD rZ,      rB, rA                       (Add registers)
-	.long Cpu_OpUndef   // 0x07 - (RFU) ADC rZ+1:rZ, rB, rA                       (Add with carry output)
-	.long Cpu_OpUndef   // 0x08 - (RFU) JMP #imm24                                (Jump absolute)
-	.long Cpu_OpUndef   // 0x09 - (RFU) JMP rB:rA+1:rA                            (Jump register indirect)
-	.long Cpu_OpUndef   // 0x0A - (RFU) SNE rZ, rB                                (Skip if not equal)
-	.long Cpu_OpUndef   // 0x0B - (RFU) SEQ rZ, rB                                (Skip if equal)
-	.long Cpu_OpUndef   // 0x0C - (RFU) SNE rZ, #imm8                             (Skip if not equal immediate)
-	.long Cpu_OpUndef   // 0x0D - (RFU) SEQ rZ, #imm8                             (Skip if equal immediate)
-	.long Cpu_OpUndef   // 0x0E - (RFU) NOT rZ, rB                                (Bitwise NOT)
-	.long Cpu_OpUndef   // 0x0F - (RFU) AND rZ, rB, rA                            (Bitwise AND)
-	.long Cpu_OpUndef   // 0x10 - (RFU) OR  rZ, rB, rA                            (Bitwise OR)
-	.long Cpu_OpUndef   // 0x11 - (RFU) EOR rZ, rB, rA                            (Bitwise Exclusive-OR)
-	.long Cpu_OpUndef   // 0x12 - (RFU) ROR rZ, zB, #1                            (Rotate-Right by 1)
-	.long Cpu_OpUndef   // 0x13 - (RFU) ROL rZ, zB, #1                            (Rotate-Left by 1)
-	.long Cpu_OpUndef   // 0x14 - Undefined
-	.long Cpu_OpUndef   // 0x15 - Undefined
-	.long Cpu_OpUndef   // 0x16 - Undefined
-	.long Cpu_OpUndef   // 0x17 - Undefined
-	.long Cpu_OpUndef   // 0x18 - Undefined
-	.long Cpu_OpUndef   // 0x19 - (RFU) LDB rZ, [rB+1:rB:rA+1:rA]                 (Load byte indirect)
-	.long Cpu_OpUndef   // 0x1A - (RFU) STB rZ, [rB+1:rB:rA+1:rA]                 (Store byte indirect)
-	.long Cpu_OpUndef   // 0x1B - (RFU) LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Load half-word indirect)
-	.long Cpu_OpUndef   // 0x1C - (RFU) STH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Store half-word indirect)
-	.long Cpu_OpUndef   // 0x1D - (RFU) LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Load word indirect)
-	.long Cpu_OpUndef   // 0x1E - (RFU) STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Store word indirect)
-	.long Cpu_OpUndef   // 0x1F - UND #imm24
+	.long Cpu_OpNop       // 0x00 - NOP                                             (No-operation)
+	.long Cpu_OpMovImm    // 0x01 - MOV rZ, #imm8                                   (Move from 8-bit immediate to register pair)
+	.long Cpu_OpMov2Imm   // 0x02 - MOV rZ+1:rZ, #imm16                             (Move from 16-bit immediate to register pair)
+	.long Cpu_OpMov2Reg   // 0x03 - MOV rZ+1:rZ, rB:rA                              (Move from register pair to register pair)
+	.long Cpu_OpAddImm8   // 0x04 - ADD rZ, rB, #imm8                               (Add 8-bit immediate)
+	.long Cpu_OpUndef     // 0x05 - (RFU) ADD2 rZ+1:rZ, #imm16                      (Add 16-bit immediate)
+	.long Cpu_OpAddReg    // 0x06 - ADD rZ, rB, rA                                  (Add registers)
+	.long Cpu_OpUndef     // 0x07 - (RFU) ADC rZ+1:rZ, rB, rA                       (Add with carry output)
+	.long Cpu_OpUndef     // 0x08 - (RFU) JMP #imm24                                (Jump absolute)
+	.long Cpu_OpUndef     // 0x09 - (RFU) JMP rB:rA+1:rA                            (Jump register indirect)
+	.long Cpu_OpUndef     // 0x0A - (RFU) SNE rZ, rB                                (Skip if not equal)
+	.long Cpu_OpUndef     // 0x0B - (RFU) SEQ rZ, rB                                (Skip if equal)
+	.long Cpu_OpUndef     // 0x0C - (RFU) SNE rZ, #imm8                             (Skip if not equal immediate)
+	.long Cpu_OpUndef     // 0x0D - (RFU) SEQ rZ, #imm8                             (Skip if equal immediate)
+	.long Cpu_OpUndef     // 0x0E - (RFU) NOT rZ, rB                                (Bitwise NOT)
+	.long Cpu_OpUndef     // 0x0F - (RFU) AND rZ, rB, rA                            (Bitwise AND)
+	.long Cpu_OpUndef     // 0x10 - (RFU) OR  rZ, rB, rA                            (Bitwise OR)
+	.long Cpu_OpUndef     // 0x11 - (RFU) EOR rZ, rB, rA                            (Bitwise Exclusive-OR)
+	.long Cpu_OpUndef     // 0x12 - (RFU) ROR rZ, zB, #1                            (Rotate-Right by 1)
+	.long Cpu_OpUndef     // 0x13 - (RFU) ROL rZ, zB, #1                            (Rotate-Left by 1)
+	.long Cpu_OpUndef     // 0x14 - Undefined
+	.long Cpu_OpUndef     // 0x15 - Undefined
+	.long Cpu_OpUndef     // 0x16 - Undefined
+	.long Cpu_OpUndef     // 0x17 - Undefined
+	.long Cpu_OpUndef     // 0x18 - Undefined
+	.long Cpu_OpLoadByte  // 0x19 - LDB rZ, [rB+1:rB:rA+1:rA]                 (Load byte indirect)
+	.long Cpu_OpStoreByte // 0x1A - STB rZ, [rB+1:rB:rA+1:rA]                 (Store byte indirect)
+	.long Cpu_OpLoadHalf  // 0x1B - LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Load half-word indirect)
+	.long Cpu_OpStoreHalf // 0x1C - STH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Store half-word indirect)
+	.long Cpu_OpLoadWord  // 0x1D - LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Load word indirect)
+	.long Cpu_OpStoreWord // 0x1E - STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Store word indirect)
+	.long Cpu_OpUndef     // 0x1F - UND #imm24
 
 	/**********************************************************************************************
 	 *
 	 * DMACU CPU Fetch/Decode/Execute/Writeback Stages
 	 *
 	 **********************************************************************************************/
+	.section ".dmacu.data", "aw", "progbits"
 
-
-	/* Fetch Stage */
-	.pushsection ".dmacu.cpu.fetch", "a", "progbits"
+	/**********************************************************************************************
+	 *
+	 * DMACU CPU Fetch Stage
+	 *
+	 **********************************************************************************************/
 Cpu_Fetch.1:
 	// FE.1: Setup source address for instruction fetch
 	Dma_ByteCopy (Cpu_Fetch.2 + 0), Cpu_PC, 4, Cpu_Fetch.2
@@ -355,10 +378,12 @@ Cpu_Fetch.3:
 	// FE.4: Copy upper 16 bit of program counter then link to decode stage
 Cpu_Fetch.4:
 	Dma_ByteCopy (Cpu_NextPC + 2), (Cpu_PC + 2), 2, Cpu_Decode.1
-	.popsection
 
-	/* Decode Stage */
-	.pushsection ".dmacu.cpu.decode", "a", "progbits"
+	/**********************************************************************************************
+	 *
+	 * DMACU CPU Decode Stage
+	 *
+	 **********************************************************************************************/
 Cpu_Decode.1:
 	// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
 	//  Major opcode is in CurrentOPC[31:24]
@@ -374,16 +399,20 @@ Cpu_Decode.3:
 	Dma_PatchSrcLo8 Cpu_Decode.4, (Cpu_CurrentOPC + 0), Cpu_Decode.4
 
 	// DE.4: Load the A operand from Regfile[CurrentOPC[15:8]] (rA)
+	//
+	// NOTE: We always load rA+1:rA
 Cpu_Decode.4:
-	Dma_ByteCopy Cpu_CurrentA, Cpu_Regfile, 1, Cpu_Decode.5
+	Dma_ByteCopy Cpu_CurrentA, Cpu_Regfile, 2, Cpu_Decode.5
 
 	// DE.5: Prepare loading the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
 Cpu_Decode.5:
 	Dma_PatchSrcLo8 Cpu_Decode.6, (Cpu_CurrentOPC + 1), Cpu_Decode.6
 
 	// DE.6: Load the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
+	//
+	// NOTE: We always load rB+1:rB
 Cpu_Decode.6:
-	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 1, Cpu_Decode.7
+	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 2, Cpu_Decode.7
 
 	// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC[23:16]] (rZ)
 Cpu_Decode.7:
@@ -391,18 +420,31 @@ Cpu_Decode.7:
 
 	// DE.8: Load the Z operand from Regfile[CurrentOPC[23:16]] (rB)
 	//   Then dispatch to the execute stage (LLI patched by Cpu_Decode.1)
+	//
+	// NOTE: We always load rZ+3:rZ+2:rZ+1:rZ+0
 Cpu_Decode.8:
-	Dma_ByteCopy Cpu_CurrentZ, Cpu_Regfile, 1, Cpu_OpUndef
+	Dma_ByteCopy Cpu_CurrentZ, Cpu_Regfile, 4, Cpu_OpUndef
 
-	.popsection
 
-	/* Writeback Stage */
-	.pushsection ".dmacu.cpu.writeback", "a", "progbits"
+	/**********************************************************************************************
+	 *
+	 * DMACU CPU Writeback Stage
+	 *
+	 **********************************************************************************************/
+
+Cpu_Writeback.FourRegs:
+	// WB.FOUR.1: Setup copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
+	Dma_PatchDstLo8 Cpu_Writeback.FourRegs.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.FourRegs.Commit
+
+Cpu_Writeback.FourRegs.Commit:
+	// WB.FOUR.2: Do copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 4, Cpu_Writeback.PC
+
 
 Cpu_Writeback.TwoRegs:
 	// WB.TWO.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
 	Dma_PatchDstLo8 Cpu_Writeback.TwoRegs.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.TwoRegs.Commit
-	
+
 Cpu_Writeback.TwoRegs.Commit:
 	// WB.TWO.2: Do copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
 	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, Cpu_Writeback.PC
@@ -410,7 +452,7 @@ Cpu_Writeback.TwoRegs.Commit:
 Cpu_Writeback.OneReg:
 	// WB.ONE.1: Setup copy from CurrentZ[7:0] to Regfile[rZ]
 	Dma_PatchDstLo8 Cpu_Writeback.OneReg.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.OneReg.Commit
-	
+
 Cpu_Writeback.OneReg.Commit:
 	// WB.ONE.2: Do copy from CurrentZ[7:0] to Regfile[rZ]
 	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 1, Cpu_Writeback.PC
@@ -419,14 +461,11 @@ Cpu_Writeback.PC:
 	// WB.PC: Copy NextPC to PC, link to fetch stage
 	Dma_ByteCopy Cpu_PC, Cpu_NextPC, 4, Cpu_Fetch.1
 
-	.popsection
-
 	/**********************************************************************************************
 	 *
 	 * DMACU CPU Opcodes (Execute Stage)
 	 *
 	 **********************************************************************************************/
-	.section ".dmacu.execute", "a", "progbits"
 
 	/*
 	 * NOP       - No Operation
@@ -473,8 +512,6 @@ Cpu_OpMov2Imm:
 	 * +------+------+------+------+
 	 * | 0x03 |  rZ  | rB   |  rA  |
 	 * +------+------+------+------+
-	 *
-	 * We only implement 
 	 */
 Cpu_OpMov2Reg:
 	// Copy from CurrentA to CurrentZ{7:0]
@@ -483,6 +520,121 @@ Cpu_OpMov2Reg:
 	// Copy from CurrentB to CurrentZ[15:8]
 Cpu_OpMov2Reg.WriteSecondReg:
 	Dma_ByteCopy (Cpu_CurrentZ + 1), Cpu_CurrentB, 1, Cpu_Writeback.TwoRegs
+
+	/*
+	 * ADD rZ, rB, #imm8               - Add register and 8-bit immediate
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x04 |  rZ  | rB   | imm8 |
+	 * +------+------+------+------+
+	 */
+Cpu_OpAddImm8:
+	// Add the 8-bit immediate (from instruction word [7:0]) to rB, store result in rZ
+	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), Cpu_Writeback.OneReg
+
+	/*
+	 * ADD rZ, rB, rA                  - Add two registers
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x06 |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpAddReg:
+	// Add  rA and rB, store result in rZ
+	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Cpu_Writeback.OneReg
+
+
+	/*
+	 * LDB rZ, [rB+1:rB:rA+1:rA]        - Load byte indirect
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x19 |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpLoadByte:
+	Dma_PatchSrcLo16 (Cpu_OpLoadByte.Load), (Cpu_CurrentA + 0), Cpu_OpLoadByte.AdrHi
+Cpu_OpLoadByte.AdrHi:
+	Dma_PatchSrcHi16 (Cpu_OpLoadByte.Load), (Cpu_CurrentB + 0), Cpu_OpLoadByte.Load
+Cpu_OpLoadByte.Load:
+	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 1, Cpu_Writeback.OneReg
+
+	/*
+	 * LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Load half-word indirect
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x1B |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpLoadHalf:
+	Dma_PatchSrcLo16 (Cpu_OpLoadHalf.Load), (Cpu_CurrentA + 0), Cpu_OpLoadHalf.AdrHi
+Cpu_OpLoadHalf.AdrHi:
+	Dma_PatchSrcHi16 (Cpu_OpLoadHalf.Load), (Cpu_CurrentB + 0), Cpu_OpLoadHalf.Load
+Cpu_OpLoadHalf.Load:
+	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 2, Cpu_Writeback.TwoRegs
+
+	/*
+	 * LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Load word indirect
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x1D |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpLoadWord:
+	Dma_PatchSrcLo16 (Cpu_OpLoadWord.Load), (Cpu_CurrentA + 0), Cpu_OpLoadWord.AdrHi
+Cpu_OpLoadWord.AdrHi:
+	Dma_PatchSrcHi16 (Cpu_OpLoadWord.Load), (Cpu_CurrentB + 0), Cpu_OpLoadWord.Load
+Cpu_OpLoadWord.Load:
+	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 4, Cpu_Writeback.FourRegs
+
+	/*
+	 * STB rZ, [rB+1:rB:rA+1:rA]        - Store byte indirect
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x1A |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpStoreByte:
+	Dma_PatchDstLo16 (Cpu_OpStoreByte.Store), (Cpu_CurrentA + 0), Cpu_OpStoreByte.AdrHi
+Cpu_OpStoreByte.AdrHi:
+	Dma_PatchDstHi16 (Cpu_OpStoreByte.Store), (Cpu_CurrentB + 0), Cpu_OpStoreByte.Store
+Cpu_OpStoreByte.Store:
+	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 1, Cpu_Writeback.PC
+
+	/*
+	 * STH rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Store half-word indirect
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x1C |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpStoreHalf:
+	Dma_PatchDstLo16 (Cpu_OpStoreHalf.Store), (Cpu_CurrentA + 0), Cpu_OpStoreHalf.AdrHi
+Cpu_OpStoreHalf.AdrHi:
+	Dma_PatchDstHi16 (Cpu_OpStoreHalf.Store), (Cpu_CurrentB + 0), Cpu_OpStoreHalf.Store
+Cpu_OpStoreHalf.Store:
+	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 2, Cpu_Writeback.PC
+
+	/*
+	 * STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Store word indirect
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x1E |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpStoreWord:
+	Dma_PatchDstLo16 (Cpu_OpStoreWord.Store), (Cpu_CurrentA + 0), Cpu_OpStoreWord.AdrHi
+Cpu_OpStoreWord.AdrHi:
+	Dma_PatchDstHi16 (Cpu_OpStoreWord.Store), (Cpu_CurrentB + 0), Cpu_OpStoreWord.Store
+Cpu_OpStoreWord.Store:
+	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 4, Cpu_Writeback.PC
 
 	/*
 	 * UND #imm24 - Undefined Instruction
