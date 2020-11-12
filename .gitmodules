@@ -1,0 +1,3 @@
+[submodule "external/movfuscator"]
+	path = external/movfuscator
+	url = https://github.com/xoreaxeaxeax/movfuscator.git
