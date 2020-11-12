@@ -183,7 +183,7 @@ LDma_TableSwitch_DoLookup\@:
 	/**
 	 * Workspace (bss-like)
 	 */
-	.section ".dmacu.bss", "aw", "nobits"
+	.section ".bss", "aw", "nobits"
 
 	// Temporary LUT / scratchpad memory
 	.align 8
@@ -238,7 +238,7 @@ Cpu_Scratchpad:
 	 * TODO: Check whether we can reduce table sizes here (at cost of higher execution time) by using a
 	 * double-sized temp LUT (and by doing an in-place copy in the temp lut)
 	 */
-	.section ".dmacu.rodata", "a", "progbits"
+	.section ".rodata", "a", "progbits"
 	.align 16
 Lut_Identity:
 	/* Identity lookup table */
@@ -280,7 +280,6 @@ Lut_Identity2:
 
 	/*
 	 * Carry LUT
-	 *
 	 */
 Lut_Carry:
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -374,7 +373,7 @@ Lut_InstructionTable:
 	 * DMACU CPU Fetch/Decode/Execute/Writeback Stages
 	 *
 	 **********************************************************************************************/
-	.section ".dmacu.data", "aw", "progbits"
+	.section ".data", "aw", "progbits"
 
 	/**********************************************************************************************
 	 *
