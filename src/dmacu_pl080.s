@@ -111,9 +111,27 @@ LDma_Add8Imm_LookupSum\@:
 	// Step 1: Load the temporary LUT with with the carry LUT offset by imm8 operand
 	Dma_ByteCopy    Lut_Temporary, (Lut_Carry + \imm8), 0x100, LDma_CarryFromAdd8Imm_LookupCarry\@
 
-	// Step 3: Lookup the carry using the temporary LUT (indexed by src2 memory operand)
+	// Step 2: Lookup the carry using the temporary LUT (indexed by src2 memory operand)
 LDma_CarryFromAdd8Imm_LookupCarry\@:
 	Dma_Sbox8       \dst, \src1, Lut_Temporary, \lli
+	.endm
+
+	/*
+	 * Add two 8-bit memory operands src1 and src2 and store the carry of the addition in dst.
+	 *
+	 * This operation uses Lut_Temporary for processing
+	 */
+	.macro Dma_CarryFromAdd8 dst, src1, src2, lli
+	// Step 1: Patch the source address of the of the carry LUT copy operation
+	Dma_PatchSrcLo8 LDma_CarryFromAdd8_LoadTempLut\@, \src1, LDma_CarryFromAdd8_LoadTempLut\@
+
+	// Step 2: Load the temporary LUT with with the carry LUT offset by imm8 operand
+LDma_CarryFromAdd8_LoadTempLut\@:
+	Dma_ByteCopy    Lut_Temporary, Lut_Carry, 0x100, LDma_CarryFromAdd8_LookupCarry\@
+
+	// Step 3: Lookup the carry using the temporary LUT (indexed by src2 memory operand)
+LDma_CarryFromAdd8_LookupCarry\@:
+	Dma_Sbox8       \dst, \src2, Lut_Temporary, \lli
 	.endm
 
 	/*
@@ -323,9 +341,9 @@ Lut_InstructionTable:
 	.long Cpu_OpMov2Imm   // 0x02 - MOV rZ+1:rZ, #imm16                             (Move from 16-bit immediate to register pair)
 	.long Cpu_OpMov2Reg   // 0x03 - MOV rZ+1:rZ, rB:rA                              (Move from register pair to register pair)
 	.long Cpu_OpAddImm8   // 0x04 - ADD rZ, rB, #imm8                               (Add 8-bit immediate)
-	.long Cpu_OpUndef     // 0x05 - (RFU) ADD2 rZ+1:rZ, #imm16                      (Add 16-bit immediate)
-	.long Cpu_OpAddReg    // 0x06 - ADD rZ, rB, rA                                  (Add registers)
-	.long Cpu_OpUndef     // 0x07 - (RFU) ADC rZ+1:rZ, rB, rA                       (Add with carry output)
+	.long Cpu_OpAcyImm8   // 0x05 - ACY rZ, rB, #imm8                               (Generate carry from add with 8-bit immediate)
+	.long Cpu_OpAddReg    // 0x06 - ADD rZ, rB, rA                                  (Add 8-bit registers)
+	.long Cpu_OpAcyReg    // 0x07 - ACY rZ, rB, rA                                  (Generate carry from add with 8-bit registers)
 	.long Cpu_OpUndef     // 0x08 - (RFU) JMP #imm24                                (Jump absolute)
 	.long Cpu_OpUndef     // 0x09 - (RFU) JMP rB:rA+1:rA                            (Jump register indirect)
 	.long Cpu_OpUndef     // 0x0A - (RFU) SNE rZ, rB                                (Skip if not equal)
@@ -534,6 +552,18 @@ Cpu_OpAddImm8:
 	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), Cpu_Writeback.OneReg
 
 	/*
+	 * ACY rZ, rB, #imm8               - Generate carry from add with 8-bit immediate
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x05 |  rZ  | rB   | imm8 |
+	 * +------+------+------+------+
+	 */
+Cpu_OpAcyImm8:
+	// Generate the carry from rB+imm8, store in rZ
+	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), Cpu_Writeback.OneReg
+
+	/*
 	 * ADD rZ, rB, rA                  - Add two registers
 	 *
 	 *  31  24     16      8      0
@@ -545,6 +575,17 @@ Cpu_OpAddReg:
 	// Add  rA and rB, store result in rZ
 	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Cpu_Writeback.OneReg
 
+	/*
+	 * ACY rZ, rB, rA                 - Generate carry from add with 8-bit registers
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+------+------+
+	 * | 0x07 |  rZ  | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_OpAcyReg:
+	// Generate the carry from rA+rB, store in rZ
+	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Cpu_Writeback.OneReg
 
 	/*
 	 * LDB rZ, [rB+1:rB:rA+1:rA]        - Load byte indirect
