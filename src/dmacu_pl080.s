@@ -1,7 +1,7 @@
 	/**
 	 * Generic DMACU Implementation for the ARM PL080 DMA Controller.
 	 *
-	 * Copyright (c) 2019 Johannes Winter
+	 * Copyright (c) 2019-2020 Johannes Winter
 	 *
 	 * This file is licensed under the MIT License. See LICENSE in the root directory
 	 * of the prohect for the license text.
@@ -285,7 +285,7 @@
 	.section ".bss", "aw", "nobits"
 
 	// Temporary LUT / scratchpad memory
-	.align 8
+	.p2align 8
 Lut_Temporary:
 	.space 0x100, 0x00
 	.type Lut_Temporary, "object"
@@ -360,7 +360,7 @@ Cpu_Scratchpad:
 	// Start of an opcode implementation
 	.macro Lut_Begin name, align=8
 	.pushsection ".rodata.Lut_\name", "a", "progbits"
-	.align \align
+	.p2align 8
 Lut_\name:
 	.endm
 
@@ -374,7 +374,7 @@ Lut_\name:
 
 	// NOTE: The carry and the identity LUT are (currently) handled in a special way
 	// (alignment on 64k boundary)
-	.align 16
+	.p2align 16
 Lut_Identity:
 	/* Identity lookup table */
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
@@ -679,7 +679,7 @@ Lit_A5:
 	/*
 	 * Instruction set decode table
 	 */
-	.align 8
+	.p2align 8
 Lut_InstructionTable:
 	.long Cpu_OpNop       // 0x00 - NOP                                       (No-operation)
 	.long Cpu_OpMovImm    // 0x01 - MOV rZ, #imm8                             (Move from 8-bit immediate to register pair)
@@ -726,7 +726,7 @@ Lut_InstructionTable:
 	// Start of CPU stage
 	.macro Cpu_Stage_Begin name
 	.pushsection ".data.Cpu_\name", "aw", "progbits"
-	.align 2
+	.p2align 2
 Cpu_\name:
 	.endm
 
@@ -855,7 +855,7 @@ Cpu_Stage_End Writeback
 	// Start of an opcode implementation
 	.macro Cpu_Opcode_Begin name
 	.pushsection ".data.Cpu_Op\name", "aw", "progbits"
-	.align 2
+	.p2align 2
 Cpu_Op\name:
 	.endm
 
@@ -1230,7 +1230,7 @@ Cpu_Opcode_End Undef
 	//
 	// Use Cpu_Execute_Logic sub-pipline instead of the macro
 	//
-	.align 2
+	.p2align 2
 Cpu_Execute_Logic:
 	// Step 1: Extract lower 4 bits of operand A into t0
 	Dma_Sbox8 (Cpu_Scratchpad + 0), (Cpu_CurrentA + 0), Lut_Lo4, .LCpu_Execute_LogicLo4_B
