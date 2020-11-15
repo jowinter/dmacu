@@ -141,7 +141,7 @@
 	 */
 	.macro Dma_Sub8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the identity LUT (2nd copy) offset by imm8 operand
-	Dma_ByteCopy    Lut_Temporary, (Lut_Identity2 - \imm8), 0x100, .LDma_Sub8Imm_LookupSum\@
+	Dma_ByteCopy    Lut_Temporary, (.Lut_Identity2 - \imm8), 0x100, .LDma_Sub8Imm_LookupSum\@
 
 	// Step 3: Lookup the sum using the temporary LUT (indexed by src2 memory operand)
 .LDma_Sub8Imm_LookupSum\@:
@@ -246,6 +246,8 @@
 	.align 8
 Lut_Temporary:
 	.space 0x100, 0x00
+	.type Lut_Temporary, "object"
+	.size Lut_Temporary, . - Lut_Temporary
 
 	// Register file (240x 8-bit, last 16 bytes are used by Cpu_PC and Cpu_NextPC)
 	.global Cpu_Regfile
@@ -254,40 +256,56 @@ Cpu_Regfile:
 
 	// Guard Zone (catches off by one writes, e.g. if MOV2 is made to r255)
 	.long 0
+	.type Cpu_Regfile, "object"
+	.size Cpu_Regfile, . - Cpu_Regfile
 
 	// Current program counter
 	.global Cpu_PC
 Cpu_PC:
 	.long 0
+	.type Cpu_PC, "object"
+	.size Cpu_PC, . - Cpu_PC
 
 	// Next program counter
 	.global Cpu_NextPC
 Cpu_NextPC:
 	.long 0
+	.type Cpu_NextPC, "object"
+	.size Cpu_NextPC, . - Cpu_NextPC
 
 	// Current instruction word
 	.global Cpu_CurrentOPC
 Cpu_CurrentOPC:
 	.long 0
+	.type Cpu_CurrentOPC, "object"
+	.size Cpu_CurrentOPC, . - Cpu_CurrentOPC
 
 	// Current A operand value
 	.global Cpu_CurrentA
 Cpu_CurrentA:
 	.short 0
+	.type Cpu_CurrentA, "object"
+	.size Cpu_CurrentA, . - Cpu_CurrentA
 
 	// Current B operand value
 	.global Cpu_CurrentB
 Cpu_CurrentB:
 	.short 0
+	.type Cpu_CurrentB, "object"
+	.size Cpu_CurrentB, . - Cpu_CurrentB
 
 	// Current Z result value
 	.global Cpu_CurrentZ
 Cpu_CurrentZ:
 	.long 0
+	.type Cpu_CurrentZ, "object"
+	.size Cpu_CurrentZ, . - Cpu_CurrentZ
 
 	// Scratchpad for temporary values
 Cpu_Scratchpad:
 	.long 0
+	.type Cpu_Scratchpad, "object"
+	.size Cpu_Scratchpad, . - Cpu_Scratchpad
 
 	/**
 	 * S-Boxes / Lookup-Tables
@@ -317,7 +335,7 @@ Lut_Identity:
 	.byte 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff
 
 	/* Identity lookup table (second copy) */
-Lut_Identity2:
+.Lut_Identity2:
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 	.byte 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
 	.byte 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f
@@ -334,6 +352,9 @@ Lut_Identity2:
 	.byte 0xd0, 0xd1, 0xd2, 0xd3, 0xd4, 0xd5, 0xd6, 0xd7, 0xd8, 0xd9, 0xda, 0xdb, 0xdc, 0xdd, 0xde, 0xdf
 	.byte 0xe0, 0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef
 	.byte 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff
+
+	.type Lut_Identity, "object"
+	.size Lut_Identity, . - Lut_Identity
 
 	/*
 	 * Carry LUT
@@ -373,6 +394,9 @@ Lut_Carry:
 	.byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
 	.byte 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
 
+	.type Lut_Carry, "object"
+	.size Lut_Carry, . - Lut_Carry
+
 	/*
 	 * Lookup table for bitwise complement (1's complement)
 	 */
@@ -393,6 +417,9 @@ Lut_BitNot:
 	.byte 0x2f, 0x2e, 0x2d, 0x2c, 0x2b, 0x2a, 0x29, 0x28, 0x27, 0x26, 0x25, 0x24, 0x23, 0x22, 0x21, 0x20
 	.byte 0x1f, 0x1e, 0x1d, 0x1c, 0x1b, 0x1a, 0x19, 0x18, 0x17, 0x16, 0x15, 0x14, 0x13, 0x12, 0x11, 0x10
 	.byte 0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
+
+	.type Lut_BitNot, "object"
+	.size Lut_BitNot, . - Lut_BitNot
 
 	/*
 	 * Lookup table for bitwise rotate-right by 1
@@ -415,6 +442,9 @@ Lut_RotateRight:
 	.byte 0x70, 0xf0, 0x71, 0xf1, 0x72, 0xf2, 0x73, 0xf3, 0x74, 0xf4, 0x75, 0xf5, 0x76, 0xf6, 0x77, 0xf7
 	.byte 0x78, 0xf8, 0x79, 0xf9, 0x7a, 0xfa, 0x7b, 0xfb, 0x7c, 0xfc, 0x7d, 0xfd, 0x7e, 0xfe, 0x7f, 0xff
 
+	.type Lut_RotateRight, "object"
+	.size Lut_RotateRight, . - Lut_RotateRight
+
 	/*
 	 * Lookup table for bitwise rotate-left by 1
 	 */
@@ -435,6 +465,10 @@ Lut_RotateLeft:
 	.byte 0xa1, 0xa3, 0xa5, 0xa7, 0xa9, 0xab, 0xad, 0xaf, 0xb1, 0xb3, 0xb5, 0xb7, 0xb9, 0xbb, 0xbd, 0xbf
 	.byte 0xc1, 0xc3, 0xc5, 0xc7, 0xc9, 0xcb, 0xcd, 0xcf, 0xd1, 0xd3, 0xd5, 0xd7, 0xd9, 0xdb, 0xdd, 0xdf
 	.byte 0xe1, 0xe3, 0xe5, 0xe7, 0xe9, 0xeb, 0xed, 0xef, 0xf1, 0xf3, 0xf5, 0xf7, 0xf9, 0xfb, 0xfd, 0xff
+
+	.type Lut_RotateLeft, "object"
+	.size Lut_RotateLeft, . - Lut_RotateLeft
+
 
 	/*
 	 * Lookup table for extraction of the 4 lower bits of a byte
@@ -457,6 +491,10 @@ Lut_Lo4:
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
 
+	.type Lut_Lo4, "object"
+	.size Lut_Lo4, . - Lut_Lo4
+
+
 	/*
 	 * Lookup table for extraction of the 4 upper bits of a byte
 	 */
@@ -477,6 +515,9 @@ Lut_Hi4:
 	.byte 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0d
 	.byte 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e
 	.byte 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f
+
+	.type Lut_Hi4, "object"
+	.size Lut_Hi4, . - Lut_Hi4
 
 	/*
 	 * Lookup table for shift-left by 4 bits (multiply by 16)
@@ -499,6 +540,9 @@ Lut_Mul16:
 	.byte 0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0
 	.byte 0x00, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90, 0xa0, 0xb0, 0xc0, 0xd0, 0xe0, 0xf0
 
+	.type Lut_Mul16, "object"
+	.size Lut_Mul16, . - Lut_Mul16
+
 	/*
 	 * Lookup table for bitwise AND (4-bit x 4-bit)
 	*/
@@ -519,6 +563,9 @@ Lut_BitAnd:
 	.byte 0x00, 0x01, 0x00, 0x01, 0x04, 0x05, 0x04, 0x05, 0x08, 0x09, 0x08, 0x09, 0x0c, 0x0d, 0x0c, 0x0d
 	.byte 0x00, 0x00, 0x02, 0x02, 0x04, 0x04, 0x06, 0x06, 0x08, 0x08, 0x0a, 0x0a, 0x0c, 0x0c, 0x0e, 0x0e
 	.byte 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+
+	.type Lut_BitAnd, "object"
+	.size Lut_BitAnd, . - Lut_BitAnd
 
 	/*
 	 * Lookup table for bitwise OR (4-bit x 4-bit)
@@ -541,6 +588,9 @@ Lut_BitOr:
 	.byte 0x0e, 0x0f, 0x0e, 0x0f, 0x0e, 0x0f, 0x0e, 0x0f, 0x0e, 0x0f, 0x0e, 0x0f, 0x0e, 0x0f, 0x0e, 0x0f
 	.byte 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f
 
+	.type Lut_BitOr, "object"
+	.size Lut_BitOr, . - Lut_BitOr
+
 	/*
 	 * Lookup table for bitwise XOR (4-bit x 4-bit)
 	 */
@@ -562,6 +612,9 @@ Lut_BitEor:
 	.byte 0x0e, 0x0f, 0x0c, 0x0d, 0x0a, 0x0b, 0x08, 0x09, 0x06, 0x07, 0x04, 0x05, 0x02, 0x03, 0x00, 0x01
 	.byte 0x0f, 0x0e, 0x0d, 0x0c, 0x0b, 0x0a, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00
 
+	.type Lut_BitEor, "object"
+	.size Lut_BitEor, . - Lut_BitEor
+
 	/*
 	 * Switch-table address generator for up to 64 entries
 	 */
@@ -572,9 +625,19 @@ Lut_TableSwitch64:
 	.byte 0x80, 0x84, 0x88, 0x8C, 0x90, 0x94, 0x98, 0x9C, 0xA0, 0xA4, 0xA8, 0xAC, 0xB0, 0xB4, 0xB8, 0xBC
 	.byte 0xC0, 0xC4, 0xC8, 0xCC, 0xD0, 0xD4, 0xD8, 0xDC, 0xE0, 0xE4, 0xE8, 0xEC, 0xF0, 0xF4, 0xF8, 0xFC
 
+	.type Lut_TableSwitch64, "object"
+	.size Lut_TableSwitch64, . - Lut_TableSwitch64
+
 	/* RFU space */
-Lit_5A: .byte 0x5A
-Lit_A5: .byte 0xA5
+Lit_5A:
+	.byte 0x5A
+	.type Lit_5A, "object"
+	.size Lit_5A, . - Lit_5A
+
+Lit_A5:
+	.byte 0xA5
+	.type Lit_A5, "object"
+	.size Lit_A5, . - Lit_A5
 
 	/*
 	 * Instruction set decode table
@@ -621,111 +684,130 @@ Lut_InstructionTable:
 	 *
 	 * DMACU CPU Fetch/Decode/Execute/Writeback Stages
 	 *
-	 **********************************************************************************************/
+	**********************************************************************************************/
+
+	// Start of CPU stage
+	.macro Cpu_Stage_Begin name
+	.pushsection ".data.Cpu_\name", "aw", "progbits"
+	.align 16
+Cpu_\name:
+	.endm
+
+	// End of a CPU stage
+	.macro Cpu_Stage_End name
+	.type Cpu_\name, "object"
+	.size Cpu_\name, . - Cpu_\name
+	.popsection
+	.endm
+
 	.section ".data", "aw", "progbits"
 
 	/**********************************************************************************************
 	 *
 	 * DMACU CPU Fetch Stage
 	 *
-	 **********************************************************************************************/
-Cpu_Fetch.1:
+	**********************************************************************************************/
+Cpu_Stage_Begin Fetch
+.LCpu_Fetch.1:
 	// FE.1: Setup source address for instruction fetch
-	Dma_ByteCopy (Cpu_Fetch.2 + 0), Cpu_PC, 4, Cpu_Fetch.2
+	Dma_ByteCopy (.LCpu_Fetch.2 + 0), Cpu_PC, 4, .LCpu_Fetch.2
 
 	// FE.2: Fetch current instruction into opcode buffer
-Cpu_Fetch.2:
-	Dma_ByteCopy Cpu_CurrentOPC, 0, 4, Cpu_Fetch.3
+.LCpu_Fetch.2:
+	Dma_ByteCopy Cpu_CurrentOPC, 0, 4, .LCpu_Fetch.3
 
 	// FE.3: Generate lower 16 bit of next program counter
-Cpu_Fetch.3:
-	Dma_Add16Imm Cpu_NextPC, Cpu_PC, 4, Cpu_Fetch.4
+.LCpu_Fetch.3:
+	Dma_Add16Imm Cpu_NextPC, Cpu_PC, 4, .LCpu_Fetch.4
 
 	// FE.4: Copy upper 16 bit of program counter then link to decode stage
-Cpu_Fetch.4:
-	Dma_ByteCopy (Cpu_NextPC + 2), (Cpu_PC + 2), 2, Cpu_Decode.1
+.LCpu_Fetch.4:
+	Dma_ByteCopy (Cpu_NextPC + 2), (Cpu_PC + 2), 2, .LCpu_Decode.1
+Cpu_Stage_End Fetch
 
 	/**********************************************************************************************
 	 *
 	 * DMACU CPU Decode Stage
 	 *
 	 **********************************************************************************************/
-Cpu_Decode.1:
+Cpu_Stage_Begin Decode
+.LCpu_Decode.1:
 	// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
 	//  Major opcode is in CurrentOPC[31:24]
 	//
-	Dma_TableSwitch64 (Cpu_Decode.8 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, Cpu_Decode.2
+	Dma_TableSwitch64 (.LCpu_Decode.8 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, .LCpu_Decode.2
 
 	// DE.2: Clear the current A and B operand values (use start of Lut_Carry as zero source)
-Cpu_Decode.2:
-	Dma_ByteCopy (Cpu_CurrentA + 0), Lut_Carry, 6, Cpu_Decode.3
+.LCpu_Decode.2:
+	Dma_ByteCopy (Cpu_CurrentA + 0), Lut_Carry, 6, .LCpu_Decode.3
 
 	// DE.3: Prepare loading the A operand from Regfile[CurrentOPC[15:8]] (rA)
-Cpu_Decode.3:
-	Dma_PatchSrcLo8 Cpu_Decode.4, (Cpu_CurrentOPC + 0), Cpu_Decode.4
+.LCpu_Decode.3:
+	Dma_PatchSrcLo8 .LCpu_Decode.4, (Cpu_CurrentOPC + 0), .LCpu_Decode.4
 
 	// DE.4: Load the A operand from Regfile[CurrentOPC[15:8]] (rA)
 	//
 	// NOTE: We always load rA+1:rA
-Cpu_Decode.4:
-	Dma_ByteCopy Cpu_CurrentA, Cpu_Regfile, 2, Cpu_Decode.5
+.LCpu_Decode.4:
+	Dma_ByteCopy Cpu_CurrentA, Cpu_Regfile, 2, .LCpu_Decode.5
 
 	// DE.5: Prepare loading the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
-Cpu_Decode.5:
-	Dma_PatchSrcLo8 Cpu_Decode.6, (Cpu_CurrentOPC + 1), Cpu_Decode.6
+.LCpu_Decode.5:
+	Dma_PatchSrcLo8 .LCpu_Decode.6, (Cpu_CurrentOPC + 1), .LCpu_Decode.6
 
 	// DE.6: Load the B operand from Regfile[CurrentOPC[ 7:0]] (rB)
 	//
 	// NOTE: We always load rB+1:rB
-Cpu_Decode.6:
-	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 2, Cpu_Decode.7
+.LCpu_Decode.6:
+	Dma_ByteCopy Cpu_CurrentB, Cpu_Regfile, 2, .LCpu_Decode.7
 
 	// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC[23:16]] (rZ)
-Cpu_Decode.7:
-	Dma_PatchSrcLo8 Cpu_Decode.8, (Cpu_CurrentOPC + 2), Cpu_Decode.8
+.LCpu_Decode.7:
+	Dma_PatchSrcLo8 .LCpu_Decode.8, (Cpu_CurrentOPC + 2), .LCpu_Decode.8
 
 	// DE.8: Load the Z operand from Regfile[CurrentOPC[23:16]] (rB)
-	//   Then dispatch to the execute stage (LLI patched by Cpu_Decode.1)
+	//   Then dispatch to the execute stage (LLI patched by .LCpu_Decode.1)
 	//
 	// NOTE: We always load rZ+3:rZ+2:rZ+1:rZ+0
-Cpu_Decode.8:
+.LCpu_Decode.8:
 	Dma_ByteCopy Cpu_CurrentZ, Cpu_Regfile, 4, Cpu_OpUndef
-
+Cpu_Stage_End Decode
 
 	/**********************************************************************************************
 	 *
 	 * DMACU CPU Writeback Stage
 	 *
-	 **********************************************************************************************/
-
-Cpu_Writeback.FourRegs:
+	**********************************************************************************************/
+Cpu_Stage_Begin Writeback
+.LCpu_Writeback.FourRegs:
 	// WB.FOUR.1: Setup copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
-	Dma_PatchDstLo8 Cpu_Writeback.FourRegs.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.FourRegs.Commit
+	Dma_PatchDstLo8 .LCpu_Writeback.FourRegs.Commit, (Cpu_CurrentOPC + 2), .LCpu_Writeback.FourRegs.Commit
 
-Cpu_Writeback.FourRegs.Commit:
+.LCpu_Writeback.FourRegs.Commit:
 	// WB.FOUR.2: Do copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
-	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 4, Cpu_Writeback.PC
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 4, .LCpu_Writeback.PC
 
 
-Cpu_Writeback.TwoRegs:
+.LCpu_Writeback.TwoRegs:
 	// WB.TWO.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
-	Dma_PatchDstLo8 Cpu_Writeback.TwoRegs.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.TwoRegs.Commit
+	Dma_PatchDstLo8 .LCpu_Writeback.TwoRegs.Commit, (Cpu_CurrentOPC + 2), .LCpu_Writeback.TwoRegs.Commit
 
-Cpu_Writeback.TwoRegs.Commit:
+.LCpu_Writeback.TwoRegs.Commit:
 	// WB.TWO.2: Do copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
-	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, Cpu_Writeback.PC
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, .LCpu_Writeback.PC
 
-Cpu_Writeback.OneReg:
+.LCpu_Writeback.OneReg:
 	// WB.ONE.1: Setup copy from CurrentZ[7:0] to Regfile[rZ]
-	Dma_PatchDstLo8 Cpu_Writeback.OneReg.Commit, (Cpu_CurrentOPC + 2), Cpu_Writeback.OneReg.Commit
+	Dma_PatchDstLo8 .LCpu_Writeback.OneReg.Commit, (Cpu_CurrentOPC + 2), .LCpu_Writeback.OneReg.Commit
 
-Cpu_Writeback.OneReg.Commit:
+.LCpu_Writeback.OneReg.Commit:
 	// WB.ONE.2: Do copy from CurrentZ[7:0] to Regfile[rZ]
-	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 1, Cpu_Writeback.PC
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 1, .LCpu_Writeback.PC
 
-Cpu_Writeback.PC:
+.LCpu_Writeback.PC:
 	// WB.PC: Copy NextPC to PC, link to fetch stage
-	Dma_ByteCopy Cpu_PC, Cpu_NextPC, 4, Cpu_Fetch.1
+	Dma_ByteCopy Cpu_PC, Cpu_NextPC, 4, .LCpu_Fetch.1
+Cpu_Stage_End Writeback
 
 	/**********************************************************************************************
 	 *
@@ -736,6 +818,7 @@ Cpu_Writeback.PC:
 	// Start of an opcode implementation
 	.macro Cpu_Opcode_Begin name
 	.pushsection ".data.Cpu_Op\name", "aw", "progbits"
+	.align 16
 Cpu_Op\name:
 	.endm
 
@@ -757,7 +840,7 @@ Cpu_Op\name:
 	 * The NOP instruction is implemented as direct link from the decoder's dispatch table to the
 	 * PC writeback stage (No separate DMA descriptors needed).
 	*/
-	.set Cpu_OpNop, Cpu_Writeback.PC
+	.set Cpu_OpNop, .LCpu_Writeback.PC
 
 	/*
 	 * MOV rZ, #imm8 - Move to register from 8-bit immediate
@@ -769,7 +852,7 @@ Cpu_Op\name:
 	*/
 	// Copy from CurrentOPC[7:0] to CurrentZ, then link to one register writeback
 Cpu_Opcode_Begin MovImm
-	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 1, Cpu_Writeback.OneReg
+	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 1, .LCpu_Writeback.OneReg
 Cpu_Opcode_End MovImm
 
 	/*
@@ -782,7 +865,7 @@ Cpu_Opcode_End MovImm
 	*/
 Cpu_Opcode_Begin Mov2Imm
 	// Copy from CurrentOPC[15:0] to CurrentZ, then link to one register writeback
-	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 2, Cpu_Writeback.TwoRegs
+	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 2, .LCpu_Writeback.TwoRegs
 Cpu_Opcode_End Mov2Imm
 
 	/*
@@ -800,7 +883,7 @@ Cpu_Opcode_Begin Mov2Reg
 
 	// Copy from CurrentB to CurrentZ[15:8]
 Cpu_OpMov2Reg.WriteSecondReg:
-	Dma_ByteCopy (Cpu_CurrentZ + 1), Cpu_CurrentB, 1, Cpu_Writeback.TwoRegs
+	Dma_ByteCopy (Cpu_CurrentZ + 1), Cpu_CurrentB, 1, .LCpu_Writeback.TwoRegs
 Cpu_Opcode_End Mov2Reg
 
 	/*
@@ -813,7 +896,7 @@ Cpu_Opcode_End Mov2Reg
 	 */
 Cpu_Opcode_Begin AddImm8
 	// Add the 8-bit immediate (from instruction word [7:0]) to rB, store result in rZ
-	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), Cpu_Writeback.OneReg
+	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), .LCpu_Writeback.OneReg
 Cpu_Opcode_End AddImm8
 
 	/*
@@ -826,7 +909,7 @@ Cpu_Opcode_End AddImm8
 	*/
 Cpu_Opcode_Begin AcyImm8
 	// Generate the carry from rB+imm8, store in rZ
-	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), Cpu_Writeback.OneReg
+	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentOPC + 0), .LCpu_Writeback.OneReg
 Cpu_Opcode_End AcyImm8
 
 	/*
@@ -839,7 +922,7 @@ Cpu_Opcode_End AcyImm8
 	 */
 Cpu_Opcode_Begin AddReg
 	// Add  rA and rB, store result in rZ
-	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Cpu_Writeback.OneReg
+	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), .LCpu_Writeback.OneReg
 Cpu_Opcode_End AddReg
 
 	/*
@@ -852,7 +935,7 @@ Cpu_Opcode_End AddReg
 	 */
 Cpu_Opcode_Begin AcyReg
 	// Generate the carry from rA+rB, store in rZ
-	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Cpu_Writeback.OneReg
+	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), .LCpu_Writeback.OneReg
 Cpu_Opcode_End AcyReg
 
 	/*
@@ -865,7 +948,7 @@ Cpu_Opcode_End AcyReg
 	 */
 Cpu_Opcode_Begin BitNot
 	// Lookup via bitwise NOT table
-	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_BitNot, Cpu_Writeback.OneReg
+	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_BitNot, .LCpu_Writeback.OneReg
 Cpu_Opcode_End BitNot
 
 	/*
@@ -878,7 +961,7 @@ Cpu_Opcode_End BitNot
 	 */
 Cpu_Opcode_Begin BitAnd
 	// Lookup via 4-bit x 4-bit logic AND LUT
-	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitAnd, Cpu_Writeback.OneReg
+	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitAnd, .LCpu_Writeback.OneReg
 Cpu_Opcode_End BitAnd
 
 	/*
@@ -891,7 +974,7 @@ Cpu_Opcode_End BitAnd
 	 */
 Cpu_Opcode_Begin BitOr
 	// Lookup via 4-bit x 4-bit logic AND LUT
-	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitOr, Cpu_Writeback.OneReg
+	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitOr, .LCpu_Writeback.OneReg
 Cpu_Opcode_End BitOr
 
 	/*
@@ -904,7 +987,7 @@ Cpu_Opcode_End BitOr
 	 */
 Cpu_Opcode_Begin BitEor
 	// Lookup via 4-bit x 4-bit logic EOR LUT
-	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitEor, Cpu_Writeback.OneReg
+	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitEor, .LCpu_Writeback.OneReg
 Cpu_Opcode_End BitEor
 
 	/*
@@ -917,7 +1000,7 @@ Cpu_Opcode_End BitEor
 	 */
 Cpu_Opcode_Begin Ror
 	// Lookup via ROR table
-	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_RotateRight, Cpu_Writeback.OneReg
+	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_RotateRight, .LCpu_Writeback.OneReg
 Cpu_Opcode_End Ror
 
 	/*
@@ -930,7 +1013,7 @@ Cpu_Opcode_End Ror
 	 */
 Cpu_Opcode_Begin Rol
 	// Lookup via ROL table (note: could also be done as 8 times ROR)
-	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_RotateLeft, Cpu_Writeback.OneReg
+	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_RotateLeft, .LCpu_Writeback.OneReg
 Cpu_Opcode_End Rol
 
 	/*
@@ -943,7 +1026,7 @@ Cpu_Opcode_End Rol
 	 */
 Cpu_Opcode_Begin Lo4
 	// Lookup via bitwise LO4 table
-	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Lo4, Cpu_Writeback.OneReg
+	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Lo4, .LCpu_Writeback.OneReg
 Cpu_Opcode_End Lo4
 
 	/*
@@ -956,7 +1039,7 @@ Cpu_Opcode_End Lo4
 	 */
 Cpu_Opcode_Begin Hi4
 	// Lookup via bitwise HI4 table
-	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Hi4, Cpu_Writeback.OneReg
+	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Hi4, .LCpu_Writeback.OneReg
 Cpu_Opcode_End Hi4
 
 	/*
@@ -969,7 +1052,7 @@ Cpu_Opcode_End Hi4
 	 */
 Cpu_Opcode_Begin Shl4
 	// Lookup via bitwise SHL4 table
-	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Mul16, Cpu_Writeback.OneReg
+	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Mul16, .LCpu_Writeback.OneReg
 Cpu_Opcode_End Shl4
 
 	/*
@@ -985,7 +1068,7 @@ Cpu_Opcode_Begin LoadByte
 Cpu_OpLoadByte.AdrHi:
 	Dma_PatchSrcHi16 (Cpu_OpLoadByte.Load), (Cpu_CurrentB + 0), Cpu_OpLoadByte.Load
 Cpu_OpLoadByte.Load:
-	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 1, Cpu_Writeback.OneReg
+	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 1, .LCpu_Writeback.OneReg
 Cpu_Opcode_End LoadByte
 
 	/*
@@ -1001,7 +1084,7 @@ Cpu_Opcode_Begin LoadHalf
 Cpu_OpLoadHalf.AdrHi:
 	Dma_PatchSrcHi16 (Cpu_OpLoadHalf.Load), (Cpu_CurrentB + 0), Cpu_OpLoadHalf.Load
 Cpu_OpLoadHalf.Load:
-	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 2, Cpu_Writeback.TwoRegs
+	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 2, .LCpu_Writeback.TwoRegs
 Cpu_Opcode_End LoadHalf
 
 	/*
@@ -1017,7 +1100,7 @@ Cpu_Opcode_Begin LoadWord
 Cpu_OpLoadWord.AdrHi:
 	Dma_PatchSrcHi16 (Cpu_OpLoadWord.Load), (Cpu_CurrentB + 0), Cpu_OpLoadWord.Load
 Cpu_OpLoadWord.Load:
-	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 4, Cpu_Writeback.FourRegs
+	Dma_ByteCopy     (Cpu_CurrentZ + 0), 0, 4, .LCpu_Writeback.FourRegs
 Cpu_Opcode_End LoadWord
 
 	/*
@@ -1033,7 +1116,7 @@ Cpu_Opcode_Begin StoreByte
 Cpu_OpStoreByte.AdrHi:
 	Dma_PatchDstHi16 (Cpu_OpStoreByte.Store), (Cpu_CurrentB + 0), Cpu_OpStoreByte.Store
 Cpu_OpStoreByte.Store:
-	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 1, Cpu_Writeback.PC
+	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 1, .LCpu_Writeback.PC
 Cpu_Opcode_End StoreByte
 
 	/*
@@ -1049,7 +1132,7 @@ Cpu_Opcode_Begin StoreHalf
 Cpu_OpStoreHalf.AdrHi:
 	Dma_PatchDstHi16 (Cpu_OpStoreHalf.Store), (Cpu_CurrentB + 0), Cpu_OpStoreHalf.Store
 Cpu_OpStoreHalf.Store:
-	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 2, Cpu_Writeback.PC
+	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 2, .LCpu_Writeback.PC
 Cpu_Opcode_End StoreHalf
 
 	/*
@@ -1065,7 +1148,7 @@ Cpu_Opcode_Begin StoreWord
 Cpu_OpStoreWord.AdrHi:
 	Dma_PatchDstHi16 (Cpu_OpStoreWord.Store), (Cpu_CurrentB + 0), Cpu_OpStoreWord.Store
 Cpu_OpStoreWord.Store:
-	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 4, Cpu_Writeback.PC
+	Dma_ByteCopy     0, (Cpu_CurrentZ + 0), 4, .LCpu_Writeback.PC
 Cpu_Opcode_End StoreWord
 
 	/*
@@ -1098,4 +1181,4 @@ Cpu_Opcode_End Undef
 	 * CPU processing starts at the FE.1 stage.
 	 */
 	.global Dma_UCode_CPU
-	.set Dma_UCode_CPU, Cpu_Fetch.1
+	.set Dma_UCode_CPU, Cpu_Fetch
