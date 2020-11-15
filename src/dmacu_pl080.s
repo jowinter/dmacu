@@ -180,6 +180,46 @@ LDma_TableSwitch_DoLookup\@:
 	Dma_ByteCopy \dst, \table, 4, \lli
 	.endm
 
+	/*
+	 * 8-bit arbitrary logic function (AND/OR/XOR)
+	 *
+	 * Storing a full LUT for 8-bit inputs src1 and src2 would require 64k entries. We use a divide and conquer
+	 * approach to implement 8-bit logic functions on top of 4-bit x 4-bit LUT:
+	 *
+	 * 1.) We extract the lower 4-bit of operand A:
+	 *     t0 := lo4(A)
+	 *
+	 * 2.) We extract the lower 4-bit of operand B:
+	 *     t1 := lo(B)
+	 *
+	 * 3.) We multiply t1 (lower 4-bit of operand B) by 16 (shift left by 4)
+	 *     t1 := mul16(t1)
+	 *
+	 * 4.) We add t0 and t1 to get the lookup index into the 4-bit x 4-bit LUT
+	 *     t0 := add(t0, t1)
+	 *
+	 * 5.) We perform a LUT lookup on the lower 4-bit of the result:
+	 *     L  := lut(t0)
+	 *
+	 * 6.) We extract the upper 4-bit of operand A:
+	 *     t0 := hi4(A)
+	 *
+	 * 7.) We extract the upper 4-bit of operand B:
+	 *     t1 := hi4(B)
+	 *
+	 * 8.) We add t0 and t1 to form the LUT index
+	 *     t0 := add(t0, t1)
+	 *
+	 * 9.) Wee add perform a LUT lookup on the upper 4-bit of the result:
+	 *     H  := lut(t0)
+	 *
+	 * 10.) We multiply H by 16 (shift left by 4)
+	 *     H  := mul16(H)
+	 *
+	 * 11.) We obtain the final result Z by adding H and L
+	 *     Z = add(L, H)
+	 */
+
 	/**
 	 * Workspace (bss-like)
 	 */
@@ -378,6 +418,10 @@ Lut_RotateLeft:
 	.byte 0xa1, 0xa3, 0xa5, 0xa7, 0xa9, 0xab, 0xad, 0xaf, 0xb1, 0xb3, 0xb5, 0xb7, 0xb9, 0xbb, 0xbd, 0xbf
 	.byte 0xc1, 0xc3, 0xc5, 0xc7, 0xc9, 0xcb, 0xcd, 0xcf, 0xd1, 0xd3, 0xd5, 0xd7, 0xd9, 0xdb, 0xdd, 0xdf
 	.byte 0xe1, 0xe3, 0xe5, 0xe7, 0xe9, 0xeb, 0xed, 0xef, 0xf1, 0xf3, 0xf5, 0xf7, 0xf9, 0xfb, 0xfd, 0xff
+
+	/*
+	 * Lookup table for bitwise
+	 */
 
 	/*
 	 * Switch-table address generator for up to 64 entries
