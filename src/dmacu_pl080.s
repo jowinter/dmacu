@@ -689,7 +689,7 @@ Lut_InstructionTable:
 	// Start of CPU stage
 	.macro Cpu_Stage_Begin name
 	.pushsection ".data.Cpu_\name", "aw", "progbits"
-	.align 16
+	.align 2
 Cpu_\name:
 	.endm
 
@@ -818,7 +818,7 @@ Cpu_Stage_End Writeback
 	// Start of an opcode implementation
 	.macro Cpu_Opcode_Begin name
 	.pushsection ".data.Cpu_Op\name", "aw", "progbits"
-	.align 16
+	.align 2
 Cpu_Op\name:
 	.endm
 
