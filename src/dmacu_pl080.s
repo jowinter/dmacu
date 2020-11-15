@@ -63,10 +63,10 @@
 	 */
 	.macro Dma_Sbox8 dst, src, sbox, lli
 	// Step 1: Load the source byte from src and substitute it into the sbox address
-	Dma_PatchSrcLo8 LDma_Sbox8_Lookup\@, \src, LDma_Sbox8_Lookup\@
+	Dma_PatchSrcLo8 .LDma_Sbox8_Lookup\@, \src, .LDma_Sbox8_Lookup\@
 
 	// Step 2: Read the byte from the (patched) sbox location and store to dst
-LDma_Sbox8_Lookup\@:
+.LDma_Sbox8_Lookup\@:
 	Dma_ByteCopy    \dst, \sbox, 1, \lli
 	.endm
 
@@ -77,14 +77,14 @@ LDma_Sbox8_Lookup\@:
 	 */
 	.macro Dma_Add8 dst, src1, src2, lli
 	// Step 1: Load source byte from src1 and patch it into the source address for loading the temporary LUT
-	Dma_PatchSrcLo8 LDma_Add8_LoadTempLut\@, \src1, LDma_Add8_LoadTempLut\@
+	Dma_PatchSrcLo8 .LDma_Add8_LoadTempLut\@, \src1, .LDma_Add8_LoadTempLut\@
 
 	// Step 2: Load the temporary LUT with with the identity LUT (offset by src1 memory operand)
-LDma_Add8_LoadTempLut\@:
-	Dma_ByteCopy    Lut_Temporary, Lut_Identity, 0x100, LDma_Add8_LookupSum\@
+.LDma_Add8_LoadTempLut\@:
+	Dma_ByteCopy    Lut_Temporary, Lut_Identity, 0x100, .LDma_Add8_LookupSum\@
 
 	// Step 3: Lookup the sum using the temporary LUT (indexed by src2 memory operand)
-LDma_Add8_LookupSum\@:
+.LDma_Add8_LookupSum\@:
 	Dma_Sbox8       \dst, \src2, Lut_Temporary, \lli
 	.endm
 
@@ -95,10 +95,10 @@ LDma_Add8_LookupSum\@:
 	 */
 	.macro Dma_Add8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the identity LUT offset by imm8 operand
-	Dma_ByteCopy    Lut_Temporary, (Lut_Identity + \imm8), 0x100, LDma_Add8Imm_LookupSum\@
+	Dma_ByteCopy    Lut_Temporary, (Lut_Identity + \imm8), 0x100, .LDma_Add8Imm_LookupSum\@
 
 	// Step 3: Lookup the sum using the temporary LUT (indexed by src2 memory operand)
-LDma_Add8Imm_LookupSum\@:
+.LDma_Add8Imm_LookupSum\@:
 	Dma_Sbox8       \dst, \src1, Lut_Temporary, \lli
 	.endm
 
@@ -109,10 +109,10 @@ LDma_Add8Imm_LookupSum\@:
 	 */
 	.macro Dma_CarryFromAdd8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the carry LUT offset by imm8 operand
-	Dma_ByteCopy    Lut_Temporary, (Lut_Carry + \imm8), 0x100, LDma_CarryFromAdd8Imm_LookupCarry\@
+	Dma_ByteCopy    Lut_Temporary, (Lut_Carry + \imm8), 0x100, .LDma_CarryFromAdd8Imm_LookupCarry\@
 
 	// Step 2: Lookup the carry using the temporary LUT (indexed by src2 memory operand)
-LDma_CarryFromAdd8Imm_LookupCarry\@:
+.LDma_CarryFromAdd8Imm_LookupCarry\@:
 	Dma_Sbox8       \dst, \src1, Lut_Temporary, \lli
 	.endm
 
@@ -123,14 +123,14 @@ LDma_CarryFromAdd8Imm_LookupCarry\@:
 	 */
 	.macro Dma_CarryFromAdd8 dst, src1, src2, lli
 	// Step 1: Patch the source address of the of the carry LUT copy operation
-	Dma_PatchSrcLo8 LDma_CarryFromAdd8_LoadTempLut\@, \src1, LDma_CarryFromAdd8_LoadTempLut\@
+	Dma_PatchSrcLo8 .LDma_CarryFromAdd8_LoadTempLut\@, \src1, .LDma_CarryFromAdd8_LoadTempLut\@
 
 	// Step 2: Load the temporary LUT with with the carry LUT offset by imm8 operand
-LDma_CarryFromAdd8_LoadTempLut\@:
-	Dma_ByteCopy    Lut_Temporary, Lut_Carry, 0x100, LDma_CarryFromAdd8_LookupCarry\@
+.LDma_CarryFromAdd8_LoadTempLut\@:
+	Dma_ByteCopy    Lut_Temporary, Lut_Carry, 0x100, .LDma_CarryFromAdd8_LookupCarry\@
 
 	// Step 3: Lookup the carry using the temporary LUT (indexed by src2 memory operand)
-LDma_CarryFromAdd8_LookupCarry\@:
+.LDma_CarryFromAdd8_LookupCarry\@:
 	Dma_Sbox8       \dst, \src2, Lut_Temporary, \lli
 	.endm
 
@@ -141,10 +141,10 @@ LDma_CarryFromAdd8_LookupCarry\@:
 	 */
 	.macro Dma_Sub8Imm dst, src1, imm8, lli
 	// Step 1: Load the temporary LUT with with the identity LUT (2nd copy) offset by imm8 operand
-	Dma_ByteCopy    Lut_Temporary, (Lut_Identity2 - \imm8), 0x100, LDma_Sub8Imm_LookupSum\@
+	Dma_ByteCopy    Lut_Temporary, (Lut_Identity2 - \imm8), 0x100, .LDma_Sub8Imm_LookupSum\@
 
 	// Step 3: Lookup the sum using the temporary LUT (indexed by src2 memory operand)
-LDma_Sub8Imm_LookupSum\@:
+.LDma_Sub8Imm_LookupSum\@:
 	Dma_Sbox8       \dst, \src1, Lut_Temporary, \lli
 	.endm
 
@@ -156,14 +156,14 @@ LDma_Sub8Imm_LookupSum\@:
 	.macro Dma_Add16Imm dst, src1, imm8, lli
 	// Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the
 	//   immediate of the upper part of the addition
-	Dma_CarryFromAdd8Imm Cpu_Scratchpad, \src1, \imm8, LDma_Add16Imm_AddLo8\@
+	Dma_CarryFromAdd8Imm Cpu_Scratchpad, \src1, \imm8, .LDma_Add16Imm_AddLo8\@
 
 	// Step 2: Perform the 8-bit addition in the lower byte
-LDma_Add16Imm_AddLo8\@:
-	Dma_Add8Imm (\dst + 0), (\src1 + 0), \imm8, LDma_Add16Imm_AddHi8\@
+.LDma_Add16Imm_AddLo8\@:
+	Dma_Add8Imm (\dst + 0), (\src1 + 0), \imm8, .LDma_Add16Imm_AddHi8\@
 
 	// Step 3: Perform the 8-bit addition in the upper byte (immediate is patched with the carry lookup value)
-LDma_Add16Imm_AddHi8\@:
+.LDma_Add16Imm_AddHi8\@:
 	Dma_Add8    (\dst + 1), (\src1 + 1), Cpu_Scratchpad, \lli
 	.endm
 
@@ -172,11 +172,11 @@ LDma_Add16Imm_AddHi8\@:
 	 */
 	.macro Dma_TableSwitch64 dst, src, table, lli
 	// Step 1: Patch the lookup address in the switch table
-LDma_TableSwitch_PrepareLookup\@:
-	Dma_Sbox8 (LDma_TableSwitch_DoLookup\@ + 0), \src, Lut_TableSwitch64, LDma_TableSwitch_DoLookup\@
+.LDma_TableSwitch_PrepareLookup\@:
+	Dma_Sbox8 (.LDma_TableSwitch_DoLookup\@ + 0), \src, Lut_TableSwitch64, .LDma_TableSwitch_DoLookup\@
 
 	// Step 2: Read a 4-byte value from the table.
-LDma_TableSwitch_DoLookup\@:
+.LDma_TableSwitch_DoLookup\@:
 	Dma_ByteCopy \dst, \table, 4, \lli
 	.endm
 
@@ -189,51 +189,51 @@ LDma_TableSwitch_DoLookup\@:
 	.macro Dma_LogicSbox4 dst, src1, src2, table, lli
 
 	// Step 1: Extract lower 4 bits of operand A into t0
-LDma_LogicSbox4_Lo4_A\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 0), \src1, Lut_Lo4, LDma_LogicSbox4_Lo4_B\@
+.LDma_LogicSbox4_Lo4_A\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 0), \src1, Lut_Lo4, .LDma_LogicSbox4_Lo4_B\@
 
 	// Step 2: Extract lower 4 bits of operand B into t1
-LDma_LogicSbox4_Lo4_B\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 1), \src2, Lut_Lo4, LDma_LogicSbox4_Lo4_Mul16_B\@
+.LDma_LogicSbox4_Lo4_B\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), \src2, Lut_Lo4, .LDma_LogicSbox4_Lo4_Mul16_B\@
 
 	// Step 3: Multiply t1 by 16
-LDma_LogicSbox4_Lo4_Mul16_B\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, LDma_LogicSbox4_Lo_Combine\@
+.LDma_LogicSbox4_Lo4_Mul16_B\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LDma_LogicSbox4_Lo_Combine\@
 
 	// Step 4: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT
-LDma_LogicSbox4_Lo_Combine\@:
-	Dma_Add8  (Cpu_Scratchpad + 2), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 0), LDma_LogicSbox4_Lo_Lookup\@
+.LDma_LogicSbox4_Lo_Combine\@:
+	Dma_Add8  (Cpu_Scratchpad + 2), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 0), .LDma_LogicSbox4_Lo_Lookup\@
 
 	// Step 5: Lookup on lower 4 bits
-LDma_LogicSbox4_Lo_Lookup\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 2), (Cpu_Scratchpad + 2), \table, LDma_LogicSbox4_Hi4_A\@
+.LDma_LogicSbox4_Lo_Lookup\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 2), (Cpu_Scratchpad + 2), \table, .LDma_LogicSbox4_Hi4_A\@
 
 	// Step 6: Extract lower 4 bits of operand A into t0
-LDma_LogicSbox4_Hi4_A\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 0), \src1, Lut_Hi4, LDma_LogicSbox4_Hi4_B\@
+.LDma_LogicSbox4_Hi4_A\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 0), \src1, Lut_Hi4, .LDma_LogicSbox4_Hi4_B\@
 
 	// Step 7: Extract lower 4 bits of operand B into t1
-LDma_LogicSbox4_Hi4_B\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 1), \src2, Lut_Hi4, LDma_LogicSbox4_Hi4_Mul16_B\@
+.LDma_LogicSbox4_Hi4_B\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), \src2, Lut_Hi4, .LDma_LogicSbox4_Hi4_Mul16_B\@
 
 	// Step 8: Multiply t1 by 16
-LDma_LogicSbox4_Hi4_Mul16_B\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, LDma_LogicSbox4_Hi_Combine\@
+.LDma_LogicSbox4_Hi4_Mul16_B\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LDma_LogicSbox4_Hi_Combine\@
 
 	// Step 9: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT
-LDma_LogicSbox4_Hi_Combine\@:
-	Dma_Add8  (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 0), LDma_LogicSbox4_Hi_Lookup\@
+.LDma_LogicSbox4_Hi_Combine\@:
+	Dma_Add8  (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 0), .LDma_LogicSbox4_Hi_Lookup\@
 
 	// Step 10: Lookup on upper 4 bits
-LDma_LogicSbox4_Hi_Lookup\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), \table, LDma_LogicSbox4_Hi_Shift\@
+.LDma_LogicSbox4_Hi_Lookup\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), \table, .LDma_LogicSbox4_Hi_Shift\@
 
 	// Step 11: Shift lookup result for higer bits by 4 bits
- LDma_LogicSbox4_Hi_Shift\@:
-	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, LDma_LogicSbox4_Result\@
+ .LDma_LogicSbox4_Hi_Shift\@:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LDma_LogicSbox4_Result\@
 
 	// Step 12: Assemble the result
-LDma_LogicSbox4_Result\@:
+.LDma_LogicSbox4_Result\@:
 	Dma_Add8 \dst, (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 2), \lli
 	.endm
 
