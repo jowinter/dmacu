@@ -7,6 +7,19 @@
 	 * of the prohect for the license text.
 	 */
 
+	/*
+	 * Enable/disable use of the Cpu_Execute_Logic dynamic sub-chain
+	 *
+	 * The Cpu_Execute_Logic dynamic sub-chain implements the lookup table procedure for 2-input
+	 * bit-logic operations (AND/OR/EOR) as dedicated sub-chain. The table addresses are patched
+	 * in dynamically.
+	 *
+	 * Enabling the sub-chain saves approximately 852 bytes of memory.
+	 *
+	 * Disabling the sub-chain causes the lookup procedure to be inlined multiple times.
+	 */
+#define DMACU_USE_CPU_EXECUTE_LOGIC (1)
+
 	/* Emit a DMA descriptor for a byte copy operation */
 	.macro Dma_ByteCopy dst, src, size, lli
 	.long (\src)
@@ -55,6 +68,11 @@
 	Dma_ByteCopy (\dst+6), (\src), 2, \lli
 	.endm
 
+	/* Patch the source location */
+	.macro Dma_PatchSrc dst, src, lli
+	Dma_ByteCopy (\dst+0), (\src), 4, \lli
+	.endm
+
 	/*
 	 * Substitute a byte from src via the given sbox and store the result in dst
 	 *
@@ -69,6 +87,14 @@
 .LDma_Sbox8_Lookup\@:
 	Dma_ByteCopy    \dst, \sbox, 1, \lli
 	.endm
+
+	/* Patch the table of an SBOX lookuü */
+	.macro Dma_Sbox8_PatchTableImm dst, tableptr, lli
+
+	// We patch the SBOX in step 2 of the lookup
+	Dma_PatchSrc (\dst+16), (\tableptr), \lli
+	.endm
+
 
 	/*
 	 * Add two bytes from memory operands src1 and src2 and store the result in dst.
@@ -186,8 +212,23 @@
 	 * Storing a full LUT for 8-bit inputs src1 and src2 would require 64k entries. We use a divide and conquer
 	 * approach to implement 8-bit logic functions on top of 4-bit x 4-bit LUT:
 	 */
-	.macro Dma_LogicSbox4 dst, src1, src2, table, lli
+	.macro Dma_LogicSbox4 dst, src1, src2, table
+#if DMACU_USE_CPU_EXECUTE_LOGIC
+	//
+	// Sub-chain implementation
+	//
 
+	// Step 1: Patch the first source lookup location
+	Dma_Sbox8_PatchTableImm .LCpu_Execute_LogicLo_Lookup, .LDma_LogixSbox4_Table\@, .LDma_LogicSbox4_PatchHi\@
+
+	// Step 2: Patch the second source lookup location and link
+.LDma_LogicSbox4_PatchHi\@:
+	Dma_Sbox8_PatchTableImm .LCpu_Execute_LogicHi_Lookup, .LDma_LogixSbox4_Table\@, Cpu_Execute_Logic
+
+.LDma_LogixSbox4_Table\@:
+	.long (\table)
+
+#else
 	// Step 1: Extract lower 4 bits of operand A into t0
 .LDma_LogicSbox4_Lo4_A\@:
 	Dma_Sbox8 (Cpu_Scratchpad + 0), \src1, Lut_Lo4, .LDma_LogicSbox4_Lo4_B\@
@@ -232,9 +273,10 @@
  .LDma_LogicSbox4_Hi_Shift\@:
 	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LDma_LogicSbox4_Result\@
 
-	// Step 12: Assemble the result
+	// Step 12: Assemble the result, then link to writeback
 .LDma_LogicSbox4_Result\@:
-	Dma_Add8 \dst, (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 2), \lli
+	Dma_Add8 \dst, (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 2), .LCpu_Writeback.OneReg
+#endif
 	.endm
 
 	/**
@@ -956,7 +998,7 @@ Cpu_Opcode_End BitNot
 	 */
 Cpu_Opcode_Begin BitAnd
 	// Lookup via 4-bit x 4-bit logic AND LUT
-	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitAnd, .LCpu_Writeback.OneReg
+	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitAnd
 Cpu_Opcode_End BitAnd
 
 	/*
@@ -969,7 +1011,7 @@ Cpu_Opcode_End BitAnd
 	 */
 Cpu_Opcode_Begin BitOr
 	// Lookup via 4-bit x 4-bit logic AND LUT
-	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitOr, .LCpu_Writeback.OneReg
+	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitOr
 Cpu_Opcode_End BitOr
 
 	/*
@@ -982,7 +1024,7 @@ Cpu_Opcode_End BitOr
 	 */
 Cpu_Opcode_Begin BitEor
 	// Lookup via 4-bit x 4-bit logic EOR LUT
-	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitEor, .LCpu_Writeback.OneReg
+	Dma_LogicSbox4 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), Lut_BitEor
 Cpu_Opcode_End BitEor
 
 	/*
@@ -1177,3 +1219,63 @@ Cpu_Opcode_End Undef
 	 */
 	.global Dma_UCode_CPU
 	.set Dma_UCode_CPU, Cpu_Fetch
+
+	/**********************************************************************************************
+	 *
+	 * DMACU CPU Pipelines (Execute Stage)
+	 *
+	**********************************************************************************************/
+
+#if DMACU_USE_CPU_EXECUTE_LOGIC
+	//
+	// Use Cpu_Execute_Logic sub-pipline instead of the macro
+	//
+	.align 2
+Cpu_Execute_Logic:
+	// Step 1: Extract lower 4 bits of operand A into t0
+	Dma_Sbox8 (Cpu_Scratchpad + 0), (Cpu_CurrentA + 0), Lut_Lo4, .LCpu_Execute_LogicLo4_B
+
+	// Step 2: Extract lower 4 bits of operand B into t1
+.LCpu_Execute_LogicLo4_B:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_CurrentB + 0), Lut_Lo4, .LCpu_Execute_LogicLo4_Mul16_B
+
+	// Step 3: Multiply t1 by 16
+.LCpu_Execute_LogicLo4_Mul16_B:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LCpu_Execute_LogicLo_Combine
+
+	// Step 4: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT
+.LCpu_Execute_LogicLo_Combine:
+	Dma_Add8  (Cpu_Scratchpad + 2), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 0), .LCpu_Execute_LogicLo_Lookup
+
+	// Step 5: Lookup on lower 4 bits
+.LCpu_Execute_LogicLo_Lookup:
+	Dma_Sbox8 (Cpu_Scratchpad + 2), (Cpu_Scratchpad + 2), 0 /* Patched in dynamically */, .LCpu_Execute_LogicHi4_A
+
+	// Step 6: Extract lower 4 bits of operand A into t0
+.LCpu_Execute_LogicHi4_A:
+	Dma_Sbox8 (Cpu_Scratchpad + 0), (Cpu_CurrentA + 0), Lut_Hi4, .LCpu_Execute_LogicHi4_B
+
+	// Step 7: Extract lower 4 bits of operand B into t1
+.LCpu_Execute_LogicHi4_B:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_CurrentB + 0), Lut_Hi4, .LCpu_Execute_LogicHi4_Mul16_B
+
+	// Step 8: Multiply t1 by 16
+.LCpu_Execute_LogicHi4_Mul16_B:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LCpu_Execute_LogicHi_Combine
+
+	// Step 9: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT
+.LCpu_Execute_LogicHi_Combine:
+	Dma_Add8  (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 0), .LCpu_Execute_LogicHi_Lookup
+
+	// Step 10: Lookup on upper 4 bits
+.LCpu_Execute_LogicHi_Lookup:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), 0 /* Patched in dynamcially */, .LCpu_Execute_LogicHi_Shift
+
+	// Step 11: Shift lookup result for higer bits by 4 bits
+ .LCpu_Execute_LogicHi_Shift:
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 1), Lut_Mul16, .LCpu_Execute_LogicResult
+
+	// Step 12: Assemble the result, store in Z and write back
+.LCpu_Execute_LogicResult:
+	Dma_Add8 (Cpu_CurrentZ + 0), (Cpu_Scratchpad + 1), (Cpu_Scratchpad + 2), .LCpu_Writeback.OneReg
+#endif
