@@ -12,6 +12,11 @@
  * FIXME: This currently requires a 32-bit CPU :(
  *
  * Typical build: gcc -m32 -Wall -pedantic -std=c99 dmacu_standalone_emu.c -x assembler-with-cpp dmacu_pl080.s
+ *
+ * Note: This MAY (read: worked once, likely to break in funny ways, expect the bugs to invade) on 64-bit systems with:
+ *  gcc -no-pie -Wall -pedantic -std=c99 dmacu_standalone_emu.c -x assembler-with-cpp dmacu_pl080.s
+ *   The no-pie option allows  R_X86_64_32 to work, which helps us :)
+ *
  */
 #include <stdint.h>
 #include <stdio.h>
@@ -81,22 +86,21 @@ bool PL080_Channel_Process(PL080_Channel_t *const ch)
       const uint8_t *const src = (const uint8_t *) ch->src_addr;
       uint8_t *const dst = (uint8_t *) ch->dst_addr;
 
-      // printf ("xfer: %p -> %p (%u): ", src, dst, size);
+      printf ("dma[%p -> %p] (%u):", src, dst, size);
 
       // Process any data to copy
       for (uint32_t i = 0u; i < size; ++i)
       {
-	// printf(" %02X", (unsigned) (src[i] & 0xFFu));
+	printf(" %02X", (unsigned) (src[i] & 0xFFu));
 	dst[i] = src[i];
       }
 
-      //printf("\n");
+      printf("\n");
 
       // No more data to transfer (try to fetch next channel descriptor)
       if (ch->lli != 0u)
       {
 	const uint32_t *const next = (const uint32_t *) ch->lli;
-	// printf ("reload lli from: %p\n", next);
 	ch->src_addr = next[0u];
 	ch->dst_addr = next[1u];
 	ch->lli      = next[2u];
@@ -139,7 +143,7 @@ void DumpCpuState(const char *prefix)
 static const uint32_t gTestProgram[] =
 {
 	UINT32_C(0x00000000), // +0x000 NOP
-
+	/*
 	// Write "Hello!" into the register file
 	UINT32_C(0x01000048), // +0x004 MOV  r0,    0x48
 	UINT32_C(0x01010065), // +0x008 MOV  r1,    0x65
@@ -154,7 +158,7 @@ static const uint32_t gTestProgram[] =
 	UINT32_C(0x010100FF), // +0x004 MOV  r1,    0xFF
 	UINT32_C(0x07200001), // ACY r32, r0, r1
 	UINT32_C(0x12212000),
-
+	*/
 	UINT32_C(0x0F10F0CA), // AND r16, r1, r2
 	UINT32_C(0x1011F0CA), // OR  r17, r1, r2
 	UINT32_C(0x1112F0CA), // EOR r18, r1, r2
