@@ -86,19 +86,21 @@ char hello[] = "hello";
 // Static test program
 static const uint32_t gTestProgram[] =
 {
-	UINT32_C(0x00000000), // +0x000 NOP
+	UINT32_C(0x01000008), // +0x000 MOV r0,    0x08
+	UINT32_C(0x01010000), // +0x004 MOV r1,    0x00
 
-	// Write "Hello!" into the register file
-	UINT32_C(0x01000048), // +0x004 MOV  r0,    0x48
-	UINT32_C(0x01010065), // +0x008 MOV  r1,    0x65
-	UINT32_C(0x02026C6C), // +0x00C MOV2 r3:r2, 0x6C6C
-	UINT32_C(0x01FF0021), // +0x010 MOV  r255,  0x21
-	UINT32_C(0x01FD006F), // +0x014 MOV  r253,  0x6F
-	UINT32_C(0x03FEFFFD), // +0x018 MOV  r254,  r253
-	UINT32_C(0x0304FFFE), // +0x01C MOV2 r5:r4, r255:r254
-	UINT32_C(0x04101155), // +0x020 ADD  r16, r17, #0x55
+	UINT32_C(0x0D000010), // +0x008 BEQ (+0x10) r0, #0x00
+	UINT32_C(0x040000FF), // +0x00C ADD r0, r0, #0xFF
+	UINT32_C(0x04010101), // +0x010 ADD r1, r1, #0x01
+	UINT32_C(0x08000008), // +0x014 JMP #0x008
 
-	UINT32_C(0x1F123456)  // +0x024 UND #0x123456
+	UINT32_C(0x0C010408), // +0x018 BNE (+0x08) r1, #0x04
+	UINT32_C(0x1F00DEAD), // +0x020 UND #0x00DEAD
+	UINT32_C(0x04000003), // +0x024 ADD r0, r0, #0x01
+	UINT32_C(0x040101FF), // +0x028 ADD r1, r1, #0xFF
+	UINT32_C(0x0E020000), // +0x02C NOT r2, r0
+	UINT32_C(0x11030201), // +0x030 EOR r3, r2, r1
+	UINT32_C(0x08000018), // +0x034 JMP #0x018
 };
 
 extern const uint32_t foo[4];

@@ -28,6 +28,26 @@
 	.long (0x0C000000 + \size)
 	.endm
 
+	/* Emit a DMA descriptor for a byte fill operation */
+	.macro Dma_ByteFill dst, src, size, lli
+	.long (\src)
+	.long (\dst)
+	.long (\lli)
+	.long (0x08000000 + \size)
+	.endm
+
+	/* Emit a DMA descriptor to record the CPU state */
+	.macro Dma_DbgState imm32
+	 Dma_ByteCopy (Cpu_DbgState + 0), (.LDma_DbgState_Lit\@), 4, (.LDma_DbgState_Next\@)
+
+.LDma_DbgState_Lit\@:
+	.long \imm32
+
+	.p2align 2
+.LDma_DbgState_Next\@:
+	.endm
+
+
 	/* Patch srcaddr[7:0] of the descriptor given by dst */
 	.macro Dma_PatchSrcLo8 dst, src, lli
 	Dma_ByteCopy (\dst+0), (\src), 1, \lli
@@ -340,6 +360,13 @@ Cpu_ProgramBase:
 	.long 0
 	.type Cpu_ProgramBase, "object"
 	.size Cpu_ProgramBase, . - Cpu_ProgramBase
+
+	// State tracker
+	.global Cpu_DbgState
+Cpu_DbgState:
+	.long 0
+	.type Cpu_DbgState, "object"
+	.size Cpu_DbgState, . - Cpu_DbgState
 
 	// Current instruction word
 	.global Cpu_CurrentOPC
@@ -702,6 +729,16 @@ Lit_A5:
 	.type Lit_A5, "object"
 	.size Lit_A5, . - Lit_A5
 
+Lit_00:
+	.byte 0x00
+	.type Lit_00, "object"
+	.size Lit_00, . - Lit_00
+
+Lit_04:
+	.byte 0x04
+	.type Lit_04, "object"
+	.size Lit_04, . - Lit_04
+
 	/*
 	 * Instruction set decode table
 	 */
@@ -717,10 +754,10 @@ Lut_InstructionTable:
 	.long Cpu_OpAcyReg    // 0x07 - ACY rZ, rB, rA                            (Generate carry from add with 8-bit registers)
 	.long Cpu_OpJmpImm16  // 0x08 - JMP #imm16                                (Jump absolute)
 	.long Cpu_OpJmpReg16  // 0x09 - JMP rB:rA                                 (Jump register indirect)
-	.long Cpu_OpUndef     // 0x0A - (RFU) SNE rZ, rB                          (Skip if not equal)
-	.long Cpu_OpUndef     // 0x0B - (RFU) SEQ rZ, rB                          (Skip if equal)
-	.long Cpu_OpUndef     // 0x0C - (RFU) SNE rZ, #imm8                       (Skip if not equal immediate)
-	.long Cpu_OpUndef     // 0x0D - (RFU) SEQ rZ, #imm8                       (Skip if equal immediate)
+	.long Cpu_OpBrNeReg   // 0x0A - BNE (+off8) rZ, rB                        (Branch if not equal)
+	.long Cpu_OpBrEqReg   // 0x0B - BEQ (+off8) rZ, rB                        (Branch if equal)
+	.long Cpu_OpBrNeImm   // 0x0C - BNE (+off8) rZ, #imm8                     (Branch if not equal immediate)
+	.long Cpu_OpBrEqImm   // 0x0D - BEQ (+off8) rZ, #imm8                     (Branch if equal immediate)
 	.long Cpu_OpBitNot    // 0x0E - NOT rZ, rB                                (Bitwise NOT)
 	.long Cpu_OpBitAnd    // 0x0F - AND rZ, rB, rA                            (Bitwise AND)
 	.long Cpu_OpBitOr     // 0x10 - OR  rZ, rB, rA                            (Bitwise OR)
@@ -772,8 +809,13 @@ Cpu_\name:
 	 **********************************************************************************************/
 Cpu_Stage_Begin Reset
 .LCpu_Reset.1:
-	// RST.1: Latch the current program counter as program base pointer
-	Dma_ByteCopy Cpu_ProgramBase, Cpu_PC, 4, .LCpu_Fetch.1
+	// RST.1: Log entry to reset state
+	Dma_DbgState 0x00727374
+	Dma_ByteCopy Cpu_ProgramBase, Cpu_PC, 4, .LCpu_Reset.2
+
+.LCpu_Reset.2:
+	// RST.3: Clear the register file
+	Dma_ByteFill Cpu_Regfile, Lit_00, 256, .LCpu_Fetch.1
 Cpu_Stage_End   Reset
 
 	/**********************************************************************************************
@@ -784,6 +826,7 @@ Cpu_Stage_End   Reset
 Cpu_Stage_Begin Fetch
 .LCpu_Fetch.1:
 	// FE.1: Setup source address for instruction fetch
+	Dma_DbgState 0x69666574
 	Dma_ByteCopy (.LCpu_Fetch.2 + 0), Cpu_PC, 4, .LCpu_Fetch.2
 
 	// FE.2: Fetch current instruction into opcode buffer
@@ -809,6 +852,7 @@ Cpu_Stage_Begin Decode
 	// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
 	//  Major opcode is in CurrentOPC[31:24]
 	//
+	Dma_DbgState 0x69646563
 	Dma_TableSwitch64 (.LCpu_Decode.8 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, .LCpu_Decode.2
 
 	// DE.2: Clear the current A and B operand values (use start of Lut_Carry as zero source)
@@ -837,6 +881,7 @@ Cpu_Stage_Begin Decode
 
 	// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC[23:16]] (rZ)
 .LCpu_Decode.7:
+	Dma_DbgState 0x65786563
 	Dma_PatchSrcLo8 .LCpu_Decode.8, (Cpu_CurrentOPC + 2), .LCpu_Decode.8
 
 	// DE.8: Load the Z operand from Regfile[CurrentOPC[23:16]] (rB)
@@ -1021,25 +1066,29 @@ Cpu_Opcode_End AcyReg
 	 * +------+------+-------------+
 	 */
 Cpu_Opcode_Begin JmpImm16
-	// Add lower 8-bit to program counter
+	// Load the program base into Cpu_NextPC
 Cpu_OpJmpImm16.1:
-	Dma_Add8To16 (Cpu_PC + 0), (Cpu_ProgramBase + 0), (Cpu_CurrentOPC + 0), Cpu_OpJmpImm16.2
+	Dma_ByteCopy (Cpu_NextPC + 0), (Cpu_ProgramBase + 0), 4, Cpu_OpJmpImm16.2
+
+	// Add lower 8-bit to program counter
+Cpu_OpJmpImm16.2:
+	Dma_Add8To16 (Cpu_NextPC + 0), (Cpu_ProgramBase + 0), (Cpu_CurrentOPC + 0), Cpu_OpJmpImm16.3
 
 	// Add upper 8-bit to program counter
-Cpu_OpJmpImm16.2:
-	Dma_Add8To16 (Cpu_PC + 1), (Cpu_PC + 1), (Cpu_CurrentOPC + 1), Cpu_OpJmpImm16.3
+Cpu_OpJmpImm16.3:
+	Dma_Add8To16 (Cpu_NextPC + 1), (Cpu_NextPC + 1), (Cpu_CurrentOPC + 1), Cpu_OpJmpImm16.4
 
 	// Clip the upper 16 bit to the program base (this ensures module-16 behavior that is consistent
 	// with the normal program counter increments). Then resume at fetch stage.
-Cpu_OpJmpImm16.3:
-	Dma_ByteCopy (Cpu_PC + 2), (Cpu_ProgramBase + 2), 2, .LCpu_Fetch.1
+Cpu_OpJmpImm16.4:
+	Dma_ByteCopy (Cpu_NextPC + 2), (Cpu_ProgramBase + 2), 2, .LCpu_Writeback.PC
 Cpu_Opcode_End JmpImm16
 
 	/*
 	 * JMP rB:rA                    - Jump register indirect
 	 *
 	 * +------+------+------+------+
-	 * | 0x0F |  (0) | rB   | rA   |
+	 * | 0x09 |  (0) | rB   | rA   |
 	 * +------+------+------+------+
 	 */
 Cpu_Opcode_Begin JmpReg16
@@ -1049,6 +1098,86 @@ Cpu_OpJmpReg16.1:
 Cpu_OpJmpReg16.2:
 	Dma_ByteCopy (Cpu_CurrentOPC + 1), (Cpu_CurrentB + 0), 1, Cpu_OpJmpImm16.1
 Cpu_Opcode_End JmpReg16
+
+	/*
+	 * BNE (+off8) rZ, rB                   - Branch if not equal
+	 *
+	 * +------+------+------+------+
+	 * | 0x0A |  rZ  | rB   | off8 |
+	 * +------+------+------+------+
+	 */
+Cpu_Opcode_Begin BrNeReg
+	// Copy rB value into imm8 field, to BrNeImm
+	Dma_ByteCopy (Cpu_CurrentOPC + 1), (Cpu_CurrentB + 0), 1, Cpu_OpBrNeImm
+Cpu_Opcode_End   BrNeReg
+
+	/*
+	 * BEQ (+off8) rZ, rB                   - Branch if equal
+	 *
+	 * +------+------+------+------+
+	 * | 0x0B |  rZ  | rB   | off8 |
+	 * +------+------+------+------+
+	 */
+Cpu_Opcode_Begin BrEqReg
+	// Copy rB value into imm8 field, to BrEqImm
+	Dma_ByteCopy (Cpu_CurrentOPC + 1), (Cpu_CurrentB + 0), 1, Cpu_OpBrEqImm
+Cpu_Opcode_End BrEqReg
+
+
+	/*
+	 * BNE (+off8) rZ, #imm8                - Branch if not equal
+	 *
+	 * +------+------+------+------+
+	 * | 0x0C |  rZ  | imm8 | off8 |
+	 * +------+------+------+------+
+	 */
+Cpu_Opcode_Begin BrNeImm
+
+Cpu_OpBrNeImm.1:
+	// Fill the temporary LUT with the offset for branch taken (+off8)
+	Dma_ByteFill Lut_Temporary, (Cpu_CurrentOPC + 0), 256, Cpu_OpBrNeImm.2
+
+Cpu_OpBrNeImm.2:
+	// Prepare for patching the match location with offset for branch not taken (+4)
+	Dma_PatchDstLo8 Cpu_OpBrNeImm.3, (Cpu_CurrentOPC + 1), Cpu_OpBrNeImm.3
+
+Cpu_OpBrNeImm.3:
+	// Patch the branch not taken location in the temporary LUT
+	Dma_ByteCopy Lut_Temporary, Lit_04, 1, Cpu_OpBrNeImm.4
+
+Cpu_OpBrNeImm.4:
+	// Lookup the branch offset from the temporary LUT
+	Dma_Sbox8 (Cpu_Scratchpad + 1), (Cpu_CurrentZ + 0), Lut_Temporary, Cpu_OpBrNeImm.5
+
+Cpu_OpBrNeImm.5:
+	// Update the lower 16-bits of the next PC (keep upper 16 bits intact)
+	Dma_Add8To16 (Cpu_NextPC + 0), (Cpu_PC + 0), (Cpu_Scratchpad + 1), Cpu_OpBrNeImm.6
+
+Cpu_OpBrNeImm.6:
+	// Clip the upper 16 bit
+	Dma_ByteCopy (Cpu_NextPC + 2), (Cpu_PC + 2), 2, .LCpu_Writeback.PC
+Cpu_Opcode_End   BrNeImm
+
+	/*
+	 * BEQ (+off8) rZ, #imm8                - Branch if equal
+	 *
+	 * +------+------+------+------+
+	 * | 0x0D |  rZ  | imm8 | off8 |
+	 * +------+------+------+------+
+	 */
+Cpu_Opcode_Begin BrEqImm
+Cpu_OpBrEqImm.1:
+	// Fill the temporary LUT with the offset for branch not taken (+4)
+	Dma_ByteFill Lut_Temporary, Lit_04, 256, Cpu_OpBrEqImm.2
+
+Cpu_OpBrEqImm.2:
+	// Prepare for patching the match location with offset for branch not taken (+4)
+	Dma_PatchDstLo8 Cpu_OpBrEqImm.3, (Cpu_CurrentOPC + 1), Cpu_OpBrEqImm.3
+
+Cpu_OpBrEqImm.3:
+	// Patch the branch taken location in the temporary LUT; then tail-call to the BrNeImm implemntation
+	Dma_ByteCopy Lut_Temporary, (Cpu_CurrentOPC + 0), 1, Cpu_OpBrNeImm.4
+Cpu_Opcode_End BrEqImm
 
 	/*
 	 * NOT rZ, rB                      - Bitwise NOT
