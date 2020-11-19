@@ -28,6 +28,9 @@ extern uint32_t Dma_UCode_CPU[];
 // Register file of the simulated CPU
 extern volatile uint8_t  Cpu_Regfile[256u];
 
+// Program base pointer
+extern volatile uint32_t Cpu_ProgramBase;
+
 // Program counter of the simulated CPU
 extern volatile uint32_t Cpu_PC;
 
@@ -118,12 +121,12 @@ bool PL080_Channel_Process(PL080_Channel_t *const ch)
 //----------------------------------------------------------------------
 void DumpCpuState(const char *prefix)
 {
-	printf("%s        PC: %08X  NextPC: %08X\n"
-		"%s       OPC: %08X\n"
-		"%s        rA: %04X  rB: %04X  rZ: %04X",
-		prefix, (unsigned) Cpu_PC, (unsigned) Cpu_NextPC,
-		prefix, (unsigned) Cpu_CurrentOPC,
-		prefix, (unsigned) Cpu_CurrentA, (unsigned) Cpu_CurrentB, (unsigned) Cpu_CurrentZ);
+	printf("%s        PC: %08X  NextPC: %08X Base: %08X\n"
+	       "%s       OPC: %08X\n"
+	       "%s        rA: %04X  rB: %04X  rZ: %04X",
+	       prefix, (unsigned) Cpu_PC, (unsigned) Cpu_NextPC, (unsigned) Cpu_ProgramBase,
+	       prefix, (unsigned) Cpu_CurrentOPC,
+	       prefix, (unsigned) Cpu_CurrentA, (unsigned) Cpu_CurrentB, (unsigned) Cpu_CurrentZ);
 
 	for (unsigned i = 0u; i < 256u; ++i)
 	{

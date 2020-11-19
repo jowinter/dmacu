@@ -315,6 +315,13 @@ Cpu_NextPC:
 	.type Cpu_NextPC, "object"
 	.size Cpu_NextPC, . - Cpu_NextPC
 
+	// Program base pointer (initial PC)
+	.global Cpu_ProgramBase
+Cpu_ProgramBase:
+	.long 0
+	.type Cpu_ProgramBase, "object"
+	.size Cpu_ProgramBase, . - Cpu_ProgramBase
+
 	// Current instruction word
 	.global Cpu_CurrentOPC
 Cpu_CurrentOPC:
@@ -741,9 +748,20 @@ Cpu_\name:
 
 	/**********************************************************************************************
 	 *
+	 * DMACU CPU Reset
+	 *
+	 **********************************************************************************************/
+Cpu_Stage_Begin Reset
+.LCpu_Reset.1:
+	// RST.1: Latch the current program counter as program base pointer
+	Dma_ByteCopy Cpu_ProgramBase, Cpu_PC, 4, .LCpu_Fetch.1
+Cpu_Stage_End   Reset
+
+	/**********************************************************************************************
+	 *
 	 * DMACU CPU Fetch Stage
 	 *
-	**********************************************************************************************/
+	 **********************************************************************************************/
 Cpu_Stage_Begin Fetch
 .LCpu_Fetch.1:
 	// FE.1: Setup source address for instruction fetch
@@ -1215,10 +1233,10 @@ Cpu_Opcode_End Undef
 	/*
 	 * Export the CPU entrypoint
 	 *
-	 * CPU processing starts at the FE.1 stage.
+	 * CPU processing starts at the RST.1 stage.
 	 */
 	.global Dma_UCode_CPU
-	.set Dma_UCode_CPU, Cpu_Fetch
+	.set Dma_UCode_CPU, .LCpu_Reset.1
 
 	/**********************************************************************************************
 	 *
