@@ -194,6 +194,25 @@
 	.endm
 
 	/*
+	 * Adds an 8-bit value (in src2) to 16-bit value (little endian) at memory operand src1 and store the result in dst1
+	 *
+	 * This operation uses Lut_Temporary and Cpu_Scratchpad for processing
+	 */
+	.macro Dma_Add8to16 dst, src1, src2, lli
+	// Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the
+	//   immediate of the upper part of the addition
+	Dma_CarryFromAdd8 Cpu_Scratchpad, \src1, \src2, .LDma_Add8to16_AddLo8\@
+
+	// Step 2: Perform the 8-bit addition in the lower byte
+.LDma_Add8to16_AddLo8\@:
+	Dma_Add8    (\dst + 0), (\src1 + 0), \src2, .LDma_Add8to16_AddHi8\@
+
+	// Step 3: Perform the 8-bit addition in the upper byte (immediate is patched with the carry lookup value)
+.LDma_Add8to16_AddHi8\@:
+	Dma_Add8    (\dst + 1), (\src1 + 1), Cpu_Scratchpad, \lli
+	.endm
+
+	/*
 	 * Indirect lookup (switch) with up to 64 entries.
 	 */
 	.macro Dma_TableSwitch64 dst, src, table, lli
@@ -696,8 +715,8 @@ Lut_InstructionTable:
 	.long Cpu_OpAcyImm8   // 0x05 - ACY rZ, rB, #imm8                         (Generate carry from add with 8-bit immediate)
 	.long Cpu_OpAddReg    // 0x06 - ADD rZ, rB, rA                            (Add 8-bit registers)
 	.long Cpu_OpAcyReg    // 0x07 - ACY rZ, rB, rA                            (Generate carry from add with 8-bit registers)
-	.long Cpu_OpUndef     // 0x08 - (RFU) JMP #imm24                          (Jump absolute)
-	.long Cpu_OpUndef     // 0x09 - (RFU) JMP rB:rA+1:rA                      (Jump register indirect)
+	.long Cpu_OpJmpImm16  // 0x08 - JMP #imm16                                (Jump absolute)
+	.long Cpu_OpJmpReg16  // 0x09 - JMP rB:rA                                 (Jump register indirect)
 	.long Cpu_OpUndef     // 0x0A - (RFU) SNE rZ, rB                          (Skip if not equal)
 	.long Cpu_OpUndef     // 0x0B - (RFU) SEQ rZ, rB                          (Skip if equal)
 	.long Cpu_OpUndef     // 0x0C - (RFU) SNE rZ, #imm8                       (Skip if not equal immediate)
@@ -992,6 +1011,44 @@ Cpu_Opcode_Begin AcyReg
 	// Generate the carry from rA+rB, store in rZ
 	Dma_CarryFromAdd8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), (Cpu_CurrentA + 0), .LCpu_Writeback.OneReg
 Cpu_Opcode_End AcyReg
+
+	/*
+	 * JMP #imm16                    - Jump absolute
+	 *
+	 *  31  24 23                 0
+	 * +------+------+-------------+
+	 * | 0x08 |  (0) | imm16       |
+	 * +------+------+-------------+
+	 */
+Cpu_Opcode_Begin JmpImm16
+	// Add lower 8-bit to program counter
+Cpu_OpJmpImm16.1:
+	Dma_Add8To16 (Cpu_PC + 0), (Cpu_ProgramBase + 0), (Cpu_CurrentOPC + 0), Cpu_OpJmpImm16.2
+
+	// Add upper 8-bit to program counter
+Cpu_OpJmpImm16.2:
+	Dma_Add8To16 (Cpu_PC + 1), (Cpu_PC + 1), (Cpu_CurrentOPC + 1), Cpu_OpJmpImm16.3
+
+	// Clip the upper 16 bit to the program base (this ensures module-16 behavior that is consistent
+	// with the normal program counter increments). Then resume at fetch stage.
+Cpu_OpJmpImm16.3:
+	Dma_ByteCopy (Cpu_PC + 2), (Cpu_ProgramBase + 2), 2, .LCpu_Fetch.1
+Cpu_Opcode_End JmpImm16
+
+	/*
+	 * JMP rB:rA                    - Jump register indirect
+	 *
+	 * +------+------+------+------+
+	 * | 0x0F |  (0) | rB   | rA   |
+	 * +------+------+------+------+
+	 */
+Cpu_Opcode_Begin JmpReg16
+	// Copy rB:rA into lower 16 bits of CurrentOPC, then delegate to JmpImm16
+Cpu_OpJmpReg16.1:
+	Dma_ByteCopy (Cpu_CurrentOPC + 0), (Cpu_CurrentA + 0), 1, Cpu_OpJmpReg16.2
+Cpu_OpJmpReg16.2:
+	Dma_ByteCopy (Cpu_CurrentOPC + 1), (Cpu_CurrentB + 0), 1, Cpu_OpJmpImm16.1
+Cpu_Opcode_End JmpReg16
 
 	/*
 	 * NOT rZ, rB                      - Bitwise NOT
