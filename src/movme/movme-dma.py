@@ -347,6 +347,15 @@ class CodeGenerator:
 
         self.release(v_tmp)
 
+    def ro_enter(self):
+        #self.emit('.pushsection ".rodata", "a", "progbits"')
+        #self.emit('.p2align 4')
+        pass
+
+    def ro_leave(self):
+        #self.emit('.popsection')
+        pass
+
     def pc_label(self, pos):
         return (".L__pc.%u" % pos)
 
@@ -365,11 +374,12 @@ class CodeGenerator:
     def unimplemented(self, line, *args):
         self.emit("// CG.UNIMPLEMENTED: %s", (line % args))
         (this_label, next_label) = self.make_pc_labels()
-
         v_bad = self.bad_access()
-        self.emit("%s:", this_label)
+
+        self.ro_enter()
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", this_label, v_bad, v_bad, 4, v_bad)
         self.emit("")
+        self.ro_leave()
 
 
     def label(self, label):
@@ -401,13 +411,13 @@ class CodeGenerator:
         self.emit('')
 
         self.emit('// Constant pool')
-        self.emit('.pushsection ".rodata", "a", "progbits"')
-        self.emit('.p2align 2')
-
+        
         for (imm,name) in self._constants.items():
+            self.emit('.pushsection ".rodata.__movme.cp", "aM", "progbits", 4')
+            self.emit('.p2align 2')
             self.emit("%s: .long (%s)", name, imm)
+            self.emit('.popsection')
 
-        self.emit('.popsection')
         self.emit('')
 
         self.emit('// Bad access trap')
@@ -423,7 +433,9 @@ class CodeGenerator:
 
         (this_label, next_label) = self.make_pc_labels()
         self.emit("// CG.COPY%u %s => %s", size, v_src, v_dst)
+        self.ro_enter()
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", this_label, v_dst, v_src, size, next_label)
+        self.ro_leave()
         self.emit("")
 
     def reg_name(self, reg):
@@ -434,16 +446,17 @@ class CodeGenerator:
 
         # And load the bottom
         (this_label, next_label) = self.make_pc_labels()
-        self.emit(".p2align 4")
+        self.ro_enter()
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", this_label, v_dst, v_reg, reg.size, next_label)
+        self.ro_leave()
         self.emit("")
 
     def reg_store(self, v_src, reg):
         v_reg = self.reg_name(reg)
 
         self.emit("// CG.REG.STORE%u %s => %s" % (reg.size, v_src, v_reg))
-        self.emit(".p2align 4")
-
+        self.ro_enter()
+        
         # TODO: Handle half writes
         if reg.size < 4:
             reg_zero_offset = reg.asm_offset + reg.size
@@ -454,6 +467,7 @@ class CodeGenerator:
 
         (this_label, next_label) = self.make_pc_labels()
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", this_label, v_reg, v_src, reg.size, next_label)
+        self.ro_leave()
         self.emit("")
 
 
@@ -472,8 +486,11 @@ class CodeGenerator:
         (this_label, next_label) = self.make_pc_labels()
         jmp_label = this_label + ".J"
 
-        self.emit(".p2align 4")
+        self.ro_enter()
         self.emit("%s: Dma_PatchLink (%s), (%s), (%s)",   this_label, jmp_label, v_tgt, jmp_label)
+        self.ro_leave()
+
+        self.emit(".p2align 4")
         self.emit("%s: Dma_ByteCopy  (%s), (%s), %u, %s", jmp_label, v_dummy,  v_dummy, 1, next_label)
         self.emit("")
 
@@ -498,9 +515,12 @@ class CodeGenerator:
         (this_label, next_label) = self.make_pc_labels()
         load_label = this_label + ".LD"
 
-        self.emit("// CG.LOAD%u [%s} => %s" % (size, v_addr, v_dst))
-        self.emit(".p2align 4")
+        self.emit("// CG.LOAD%u [%s} => %s" % (size, v_addr, v_dst))        
+        self.ro_enter()
         self.emit("%s: Dma_PatchSrc (%s), (%s), (%s)",   this_label, load_label, v_addr, load_label)
+        self.ro_leave()
+
+        self.emit(".p2align 4")
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", load_label, v_dst,  self.bad_access(), size, next_label)
         self.emit("")
 
@@ -509,7 +529,10 @@ class CodeGenerator:
         store_label = this_label + ".ST"
 
         self.emit(".p2align 4")
+        self.ro_enter()
         self.emit("%s: Dma_PatchDst (%s), (%s), (%s)",   this_label, store_label, v_addr, store_label)
+        self.ro_leave()
+
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", store_label, self.bad_access(), v_src, size, next_label)
         self.emit("")
 
