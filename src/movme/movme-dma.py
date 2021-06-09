@@ -36,7 +36,7 @@ class CpuRegInfo:
     @property
     def asm_name(self):
         return self._asm_name
-        
+
     @property
     def asm_offset(self):
         return self._asm_offset
@@ -124,7 +124,7 @@ class OpReg(Operand):
         # Resolve a well-known X86 register
         info = WELL_KNOWN_CPU_REGS[str(reg)]
 
-        super().__init__(info.size)        
+        super().__init__(info.size)
         self._info = info
 
 
@@ -183,10 +183,10 @@ class OpAddExpr(Operand):
 
             # Generate the LHS expression
             v_left  = cg.imm_alloc(self.left)
-            
+
             # Generate the RHS expression
             v_right = cg.imm_alloc(self.right)
-            
+
             # Load
             cg.add(v_dst = tgt, v_left = v_left, v_right = v_right)
 
@@ -231,7 +231,7 @@ class OpScaleExpr(Operand):
 
             # Generate the operand expression
             v_arg  = cg.imm_alloc(self.arg)
-            
+
             # Load
             cg.scale(v_dst = tgt, v_arg = v_arg, scale = self.scale)
 
@@ -270,7 +270,7 @@ class OpMemExpr(Operand):
         v_addr = cg.imm_alloc(self.addr)
 
         if is_load:
-            cg.mem_load(v_dst = tgt, v_addr = v_addr, size = self.size)            
+            cg.mem_load(v_dst = tgt, v_addr = v_addr, size = self.size)
         else:
             cg.mem_store(v_src = tgt, v_addr = v_addr, size = self.size)
 
@@ -289,7 +289,7 @@ class CodeGenerator:
         # Temporary variable pool
         self._temps_alloc    = {}
         self._temps_active   = {}
-        
+
         self._code = []
         pass
 
@@ -362,12 +362,27 @@ class CodeGenerator:
     def emit(self, line, *args):
         self._code.append("\t" + (line % args).strip())
 
+    def unimplemented(self, line, *args):
+        self.emit("// CG.UNIMPLEMENTED: %s", (line % args))
+        (this_label, next_label) = self.make_pc_labels()
+
+        v_bad = self.bad_access()
+        self.emit("%s:", this_label)
+        self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", this_label, v_bad, v_bad, 4, v_bad)
+        self.emit("")
+
+
     def label(self, label):
         self.emit("// LABEL %s", label)
         self.emit("%s:", label)
         self.emit('')
 
-    def emit_globals(self):                
+    def bss_alloc(self, name, size):
+        self.emit("// BSS ALLOC %s, %s", name, size)
+        self.emit(".comm %s, %s", name, size)
+        self.emit('')
+
+    def emit_globals(self):
         self.emit('.pushsection ".data", "aw", "progbits"')
         self.emit('.p2align 2')
         self.emit('')
@@ -402,7 +417,7 @@ class CodeGenerator:
     def copy(self, v_dst, v_src, size):
         """
         Copies 'size' bytes from 'v_src' to 'v_dst'.
-        
+
         'v_src' and 'v_dst' must be temporary labels
         """
 
@@ -436,17 +451,48 @@ class CodeGenerator:
             (this_label, next_label) = self.make_pc_labels()
             self.emit("%s: Dma_ByteCopy (%s+%u), (%s), %u, %s", this_label, v_reg, reg.size,
                 self.make_constant(0), reg_zero_size, next_label)
-        
+
         (this_label, next_label) = self.make_pc_labels()
         self.emit("%s: Dma_ByteCopy (%s), (%s), %u, %s", this_label, v_reg, v_src, reg.size, next_label)
         self.emit("")
-        
+
 
     def add(self, v_dst, v_left, v_right):
-        logging.info("CG.ADD %s + %s => %s" % (v_left, v_right, v_dst))
+        self.unimplemented("CG.ADD %s + %s => %s", v_left, v_right, v_dst)
 
     def scale(self, v_dst, v_arg, scale):
-        logging.info("CG.SCALE %s * %u => %s" % (v_arg, scale, v_dst))
+        self.unimplemented("CG.SCALE %s * %u => %s", v_arg, scale, v_dst)
+
+    def jump(self, tgt):
+        self.emit('// JMP %s', tgt)
+
+        v_tgt = self.imm_alloc(tgt)
+        v_dummy = self.alloc()
+
+        (this_label, next_label) = self.make_pc_labels()
+        jmp_label = this_label + ".J"
+
+        self.emit(".p2align 4")
+        self.emit("%s: Dma_PatchLink (%s), (%s), (%s)",   this_label, jmp_label, v_tgt, jmp_label)
+        self.emit("%s: Dma_ByteCopy  (%s), (%s), %u, %s", jmp_label, v_dummy,  v_dummy, 1, next_label)
+        self.emit("")
+
+        self.release(v_dummy)
+        self.imm_release(v_tgt)
+
+    def cond_jump(self, v_tgt, relop):
+        self.unimplemented('COND JMP %s TO %s', relop, v_tgt)
+
+    def literal_data(self, type, data):
+        self.emit("// DATA %s %s", type, data)
+        self.emit(".%s %s", type, data)
+        self.emit("")
+
+    def mark_global(self, sym):
+        # TODO: Cleanup
+        self.emit("// GLOBAL %s", sym)
+        self.emit(".global %s", sym)
+        self.emit("")
 
     def mem_load(self, v_dst, v_addr, size):
         (this_label, next_label) = self.make_pc_labels()
@@ -530,7 +576,7 @@ class MovToDmaTranspiler:
 
             # Section directive (well-known section)
             (
-                re.compile(r'^(\.(?:data|text))$'),
+                re.compile(r'^(\.(?:data|text|bss))$'),
                 self._parse_section
             ),
 
@@ -538,6 +584,12 @@ class MovToDmaTranspiler:
             (
                 re.compile(r'^(?:\.globl|\.global)\s+(.*)$'),
                 self._parse_global
+            ),
+
+            # BSS allocation (.comm)
+            (
+                re.compile(r'^\.comm\s+(.*)\s*,\s*(.*)$'),
+                self._parse_comm
             ),
 
             # .type directive
@@ -610,6 +662,21 @@ class MovToDmaTranspiler:
             )
         ]
 
+        # Operand parsers (jump)
+        self._op_parsers_jmp = [
+            # Register operand
+            (
+                re.compile(r'^\*%(.+)$'),
+                lambda m,access_size:  self._parse_op_reg(m, access_size)
+            ),
+
+            # Label (catch-all)
+            (
+                re.compile(r'^(.+)$'),
+                lambda m,access_size: self._parse_op_lit(m, access_size)
+            )
+        ]
+
         # Operation sizes (suffix)
         self._op_sizes = {
             'b' : 1,
@@ -654,7 +721,7 @@ class MovToDmaTranspiler:
                 return
 
         # Nothing matched
-        self.parse_unhandled(line)
+        self._parse_unhandled(line)
 
     def _parse_operand(self, op, access_size):
         for (pattern, handler) in self._op_parsers:
@@ -663,6 +730,16 @@ class MovToDmaTranspiler:
                 return handler(m, access_size)
 
         logging.error('%s(%u): unhandled operand: %s', self._input_name, self._line_no, op)
+        self._parser_errors += 1
+        return None
+
+    def _parse_jump_operand(self, op, access_size = 4):
+        for (pattern, handler) in self._op_parsers_jmp:
+            m = pattern.match(op)
+            if m:
+                return handler(m, access_size)
+
+        logging.error('%s(%u): unhandled jump operand: %s', self._input_name, self._line_no, op)
         self._parser_errors += 1
         return None
 
@@ -718,10 +795,9 @@ class MovToDmaTranspiler:
         opsize = self._parse_access_size(m.group(1))
         src = self._parse_operand(m.group(2), opsize)
         dst = self._parse_operand(m.group(3), opsize)
-        logging.info('MOV.%s %s := %s', opsize, dst, src)
-        
+
+        #logging.info('MOV.%s %s := %s', opsize, dst, src)
         self._cg.move(src = src, dst = dst)
-        pass
 
     def _parse_cmp(self, m):
         opsize = self._parse_access_size(m.group(1))
@@ -733,68 +809,62 @@ class MovToDmaTranspiler:
         # TODO: Load from lhs => tmp1
         # TODO: Load from rhs => tmp2
         # TODO: Run compare chain (to generate flags)
-        pass
+        self._cg.unimplemented('CMP.%s %s ?= %s', opsize, lhs, rhs)
 
     def _parse_jmp(self, m):
-        tgt = m.group(1)
-        # TODO: Generate branch target
-        logging.debug('JMP %s', tgt)
-        pass
+        tgt = self._parse_jump_operand(m.group(1))
+        self._cg.jump(tgt)
 
     def _parse_cond_jmp(self, m):
         relop = m.group(1)
-        tgt = m.group(2)
-
-        # TODO: Generate relop (based on flags)
-        # TODO: Generate branch target
-        logging.debug('COND JMP %s TO %s', relop, tgt)
-        pass
+        tgt = self._parse_jump_operand(m.group(2))
+        self._cg.cond_jump(tgt, relop)
 
     def _parse_label(self, m):
         tgt = m.group(1)
 
         if tgt == "main":
             tgt = "Dma_UCode_Main"
-        
+
         self._cg.label(tgt)
 
     def _parse_data(self, m):
         type = m.group(1)
         data = m.group(2)
-        
-        # TODO: Cleanup
-        self._cg.emit("// DATA %s %s", type, data)
-        self._cg.emit(".%s %s", type, data)
-        self._cg.emit("")
+        self._cg.literal_data(type, data)
+
+    def _parse_comm(self, m):
+        name = m.group(1)
+        size = m.group(2)
+        self._cg.bss_alloc(name, size)
 
     def _parse_global(self, m):
         sym = m.group(1)
 
         if sym == "main":
             sym = "Dma_UCode_Main"
-        
-        # TODO: Cleanup
-        self._cg.emit("// GLOBAL %s", sym)
-        self._cg.emit(".global %s", sym)
-        self._cg.emit("")
-        pass
+
+        self._cg.mark_global(sym)
 
     def _parse_type(self, m):
         sym = m.group(1)
         type = m.group(2)
+
+        # TODO: Cleanup (probably not even needed)
         logging.debug('TYPE %s %s', sym, type)
-        pass
 
     def _parse_size(self, m):
         sym = m.group(1)
         value = m.group(2)
+
+        # TODO: Cleanup (probably not even needed)
         logging.debug('SIZE %s %s', sym, value)
-        pass
 
     def _parse_section(self, m):
         name = m.group(1)
+
+        # TODO: Cleanup (probably not even needed)
         logging.debug('SECTION %s', name)
-        pass
 
     def _parse_unhandled(self, line):
         # Report an error
@@ -880,9 +950,10 @@ DMACU_PREFIX = """
 	Dma_ByteCopy (\dst+0), (\src), 4, \lli
 	.endm
 
-    /* Virtual register file */
-    .data
-    .p2align 4
+    /* Patch the LLI location */
+	.macro Dma_PatchLink dst, src, lli
+	Dma_ByteCopy (\dst+8), (\src), 4, \lli
+	.endm
 
     /* Assume data segment by default -*/
     .data
