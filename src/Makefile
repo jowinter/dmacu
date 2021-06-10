@@ -15,10 +15,10 @@ CROSS_LDFLAGS := -mcpu=$(CROSS_CPU) -msoft-float --specs=nano.specs --specs=rdim
 CROSS_LIBS    :=
 
 C_SOURCES  := dmacu_qemu_versatilepb.c
-AS_SOURCES := dmacu_pl080.s
+AS_SOURCES := dmacu_pl080.S
 
 EXECUTABLE := dmacu.elf
-OBJECTS    := $(C_SOURCES:%.c=%.o) $(AS_SOURCES:%.s=%.o)
+OBJECTS    := $(C_SOURCES:%.c=%.o) $(AS_SOURCES:%.S=%.o)
 
 all: $(EXECUTABLE)
 
@@ -34,6 +34,6 @@ $(EXECUTABLE): $(OBJECTS)
 %.o: %.c
 	$(CROSS_CC) $(CROSS_CFLAGS) -o $@ -c $<
 
-%.o: %.s
+%.o: %.S
 	$(CROSS_AS) $(CROSS_ASFLAGS) -o $@ -c $<
 
