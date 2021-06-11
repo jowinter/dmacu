@@ -241,7 +241,7 @@ Lut_InstructionTable:
 	.long Cpu_OpLo4       // 0x14 - LO4 rZ, rB                                (Extract lower 4 bits)
 	.long Cpu_OpHi4       // 0x15 - HI4 rZ, rB                                (Insert upper 4 bits)
 	.long Cpu_OpShl4      // 0x16 - SHL rZ, rB, #4                            (Shift left by 4 / multiply by 16)
-	.long Cpu_OpUndef     // 0x17 - Undefined
+	.long Cpu_OpJal       // 0x17 - JAL rZ+1:rZ, #imm16                       (Jump and Link)
 	.long Cpu_OpUndef     // 0x18 - Undefined
 	.long Cpu_OpLoadByte  // 0x19 - LDB rZ, [rB+1:rB:rA+1:rA]                 (Load byte indirect)
 	.long Cpu_OpStoreByte // 0x1A - STB rZ, [rB+1:rB:rA+1:rA]                 (Store byte indirect)
@@ -440,7 +440,7 @@ Cpu_Op\name:
 	 *
 	 *  31  24     16      8      0
 	 * +------+------+------+------+
-	 * | 0x01 | (0)  | (0)  | imm8 |
+	 * | 0x01 | rZ   | (0)  | imm8 |
 	 * +------+------+------+------+
 	*/
 	// Copy from CurrentOPC[7:0] to CurrentZ, then link to one register writeback
@@ -560,6 +560,7 @@ Cpu_Opcode_End JmpImm16
 
 	/*
 	 * JMP rB:rA                    - Jump register indirect
+	 * RET rA                       - (Pseudo-Instruction) Return from Subroutine (if rB=rZ+1)
 	 *
 	 * +------+------+------+------+
 	 * | 0x09 |  (0) | rB   | rA   |
@@ -769,6 +770,29 @@ Cpu_Opcode_Begin Shl4
 	// Lookup via bitwise SHL4 table
 	Dma_Sbox8 (Cpu_CurrentZ + 0), (Cpu_CurrentB + 0), Lut_Mul16, .LCpu_Writeback.OneReg
 Cpu_Opcode_End Shl4
+
+	/*
+	 * JAL rZ+1:rZ, #imm16             - Jump and Link
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+-------------+
+	 * | 0x17 |  rZ  | imm16       |
+	 * +------+------+-------------+
+	 */
+Cpu_Opcode_Begin Jal
+	// Copy the lower half of next PC value to rZ, then link to JmpReg16
+	// (Clipping is consistent with program counter increment)
+Cpu_OpJal.1:
+	Dma_ByteCopy (Cpu_CurrentZ + 0), (Cpu_NextPC + 0), 2, Cpu_OpJal.2
+
+Cpu_OpJal.2:
+	// WB.FOUR.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+2]:...:Regfile[rZ]
+	Dma_PatchDstLo8 Cpu_OpJal.3, (Cpu_CurrentOPC + 2), Cpu_OpJal.3
+
+Cpu_OpJal.3:
+	// WB.FOUR.2: Do copy from CurrentZ[15:0] to Regfile[rZ+2]:...:Regfile[rZ]
+	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, Cpu_OpJmpImm16
+Cpu_Opcode_End Jal
 
 	/*
 	 * LDB rZ, [rB+1:rB:rA+1:rA]        - Load byte indirect
