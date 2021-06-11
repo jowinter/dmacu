@@ -242,7 +242,7 @@ Lut_InstructionTable:
 	.long Cpu_OpHi4       // 0x15 - HI4 rZ, rB                                (Insert upper 4 bits)
 	.long Cpu_OpShl4      // 0x16 - SHL rZ, rB, #4                            (Shift left by 4 / multiply by 16)
 	.long Cpu_OpJal       // 0x17 - JAL rZ+1:rZ, #imm16                       (Jump and Link)
-	.long Cpu_OpUndef     // 0x18 - Undefined
+	.long Cpu_OpLit32     // 0x18 - LIT32 (+off16) rZ+3:rZ+2:rZ+1:rZ          (Load 32-bit literal from a PC relative offset)
 	.long Cpu_OpLoadByte  // 0x19 - LDB rZ, [rB+1:rB:rA+1:rA]                 (Load byte indirect)
 	.long Cpu_OpStoreByte // 0x1A - STB rZ, [rB+1:rB:rA+1:rA]                 (Store byte indirect)
 	.long Cpu_OpLoadHalf  // 0x1B - LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]            (Load half-word indirect)
@@ -793,6 +793,33 @@ Cpu_OpJal.3:
 	// WB.FOUR.2: Do copy from CurrentZ[15:0] to Regfile[rZ+2]:...:Regfile[rZ]
 	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, Cpu_OpJmpImm16
 Cpu_Opcode_End Jal
+
+	/*
+	 * LIT32 rZ+3:rZ+2:rZ+1:rZ, (off16) - Load a 32-bit literal
+	 *
+	 *  31  24     16      8      0
+	 * +------+------+-------------+
+	 * | 0x17 |  rZ  | (off16)     |
+	 * +------+------+-------------+
+	 */
+Cpu_Opcode_Begin Lit32
+	// Load the program base into the source address of the copy operation at step 4
+Cpu_OpLit32.1:
+	Dma_ByteCopy (Cpu_OpLit32.Commit + 0), (Cpu_ProgramBase + 0), 4, Cpu_OpLit32.2
+
+	// Add lower 8-bit to rZ
+Cpu_OpLit32.2:
+	Cpu_Add8To16 (Cpu_OpLit32.Commit + 0), (Cpu_ProgramBase + 0), (Cpu_CurrentOPC + 0), Cpu_OpLit32.3
+
+	// Add upper 8-bit to program counter
+Cpu_OpLit32.3:
+	Cpu_Add8To16 (Cpu_OpLit32.Commit + 1), (Cpu_OpLit32.Commit + 1), (Cpu_CurrentOPC + 1), Cpu_OpLit32.Commit
+
+	// Ignore clipping for LIT32 offsets (this allows is to load literals that sit slightly outside of the
+	// 64k code segment)
+Cpu_OpLit32.Commit:
+	Dma_ByteCopy (Cpu_CurrentZ + 0), (0xBADC0DE0), 4, .LCpu_Writeback.FourRegs
+Cpu_Opcode_End   Lit32
 
 	/*
 	 * LDB rZ, [rB+1:rB:rA+1:rA]        - Load byte indirect
