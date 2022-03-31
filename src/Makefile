@@ -37,3 +37,6 @@ $(EXECUTABLE): $(OBJECTS)
 %.o: %.S
 	$(CROSS_AS) $(CROSS_ASFLAGS) -o $@ -c $<
 
+%.o: %.s
+	$(CROSS_AS) $(CROSS_ASFLAGS) -o $@ -c $<
+
