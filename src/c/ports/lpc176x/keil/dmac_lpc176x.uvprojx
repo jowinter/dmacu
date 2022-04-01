@@ -339,7 +339,7 @@
               <MiscControls>-Wall -Wno-c11-extensions -pedantic</MiscControls>
               <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\..\c</IncludePath>
+              <IncludePath>..\..\..\vcpu</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -381,22 +381,22 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>vm</GroupName>
+          <GroupName>vcpu</GroupName>
           <Files>
             <File>
               <FileName>dmacu.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\dmacu.c</FilePath>
-            </File>
-            <File>
-              <FileName>rt.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\rt.c</FilePath>
+              <FilePath>..\..\..\vcpu\dmacu.c</FilePath>
             </File>
             <File>
               <FileName>dmacu.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\..\..\dmacu.h</FilePath>
+              <FilePath>..\..\..\vcpu\dmacu.h</FilePath>
+            </File>
+            <File>
+              <FileName>rt.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\vcpu\rt.c</FilePath>
             </File>
           </Files>
         </Group>

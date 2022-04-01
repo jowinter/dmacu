@@ -177,7 +177,7 @@
   </Target>
 
   <Group>
-    <GroupName>vm</GroupName>
+    <GroupName>vcpu</GroupName>
     <tvExp>1</tvExp>
     <tvExpOptDlg>0</tvExpOptDlg>
     <cbSel>0</cbSel>
@@ -189,7 +189,7 @@
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\dmacu.c</PathWithFileName>
+      <PathWithFileName>..\..\..\vcpu\dmacu.c</PathWithFileName>
       <FilenameWithoutPath>dmacu.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
@@ -197,24 +197,24 @@
     <File>
       <GroupNumber>1</GroupNumber>
       <FileNumber>2</FileNumber>
-      <FileType>1</FileType>
+      <FileType>5</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\rt.c</PathWithFileName>
-      <FilenameWithoutPath>rt.c</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\vcpu\dmacu.h</PathWithFileName>
+      <FilenameWithoutPath>dmacu.h</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
     <File>
       <GroupNumber>1</GroupNumber>
       <FileNumber>3</FileNumber>
-      <FileType>5</FileType>
+      <FileType>1</FileType>
       <tvExp>0</tvExp>
       <tvExpOptDlg>0</tvExpOptDlg>
       <bDave2>0</bDave2>
-      <PathWithFileName>..\..\..\dmacu.h</PathWithFileName>
-      <FilenameWithoutPath>dmacu.h</FilenameWithoutPath>
+      <PathWithFileName>..\..\..\vcpu\rt.c</PathWithFileName>
+      <FilenameWithoutPath>rt.c</FilenameWithoutPath>
       <RteFlg>0</RteFlg>
       <bShared>0</bShared>
     </File>
