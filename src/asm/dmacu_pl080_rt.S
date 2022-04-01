@@ -409,7 +409,7 @@ Lut_Scratchpad:
 	.set .L_i, 0
 	.rept 256
 
-	.byte (~.L_i & 0xFF)
+	.byte (-.L_i & 0xFF)
 
 	.set .L_i, .L_i + 1
 	.endr
