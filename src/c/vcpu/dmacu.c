@@ -615,48 +615,14 @@ DMACU_PRIVATE const Dma_UIntPtr_t Lut_InstructionTable[32u] =
 //
 //-----------------------------------------------------------------------------------------
 
-typedef struct Dmacu_Cpu
-{
-    // Register file (256 registers)
-    uint8_t RegFile[256u];
-
-    // Guard zone (catches off-by-one/two/three access for regfile corner-cases)
-    uint32_t GuardZone;
-
-    // Current program counter
-    uint32_t PC;
-
-    // Next program counter
-    uint32_t NextPC;
-
-    // Program base address (initial PC)
-    uint32_t ProgramBase;
-
-    // Current instruction word
-    uint8_t CurrentOPC[4u];
-
-    // Operand values
-    struct
-    {
-        // Current A operand value
-        uint32_t A;
-
-        // Current B operand value
-        uint32_t B;
-
-        // Current Z result value
-        uint32_t Z;
-    } Operands;
-
-    // Scratchpad for temporary values
-    uint32_t Scratchpad;
-
-    // Active SBOX (for shared logic pipeline)
-    uint32_t ActiveLogicSbox;
-} Dmacu_Cpu_t;
-
 // Global instance of the CPU execution state
 DMACU_PRIVATE Dmacu_Cpu_t gCpu;
+
+//-----------------------------------------------------------------------------------------
+extern Dmacu_Cpu_t* Dmacu_GetCpu(void)
+{
+	return &gCpu;
+}
 
 //-----------------------------------------------------------------------------------------
 //
