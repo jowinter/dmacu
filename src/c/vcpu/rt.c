@@ -9,7 +9,7 @@
 
 /**
  * @file rt.c
- * @brief Runtime-Environment (and startup code) 
+ * @brief Runtime-Environment (and startup code)
  */
 #include "dmacu.h"
 
@@ -42,9 +42,9 @@ int main(void)
 {
 	// HAL-level initialization
 	Hal_Init();
-	
+
 	// And run our test-program
 	Dmacu_Run(&gTestProgram[0u]);
-	
-  return EXIT_SUCCESS;
+
+	return EXIT_SUCCESS;
 }
