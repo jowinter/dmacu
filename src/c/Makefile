@@ -70,6 +70,10 @@ clean:
 sim: $(EXECUTABLE)
 	qemu-system-arm -machine versatilepb -semihosting -nographic -kernel $(EXECUTABLE)
 
+# Host-side simulation (using qemu-i386 to support 64-bit hosts such as WSL on Windows 10)
+host-sim: $(HOST_EXECUTABLE)
+	qemu-i386 $(HOST_EXECUTABLE)
+
 # Link the target binary
 $(EXECUTABLE): $(OBJECTS)
 	$(CROSS_LD) $(CROSS_LDFLAGS) -o $@ $(OBJECTS) $(CROSS_LIBS)
