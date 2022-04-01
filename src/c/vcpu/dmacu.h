@@ -118,41 +118,53 @@ typedef struct Dma_Descriptor
 ///
 typedef struct Dmacu_Cpu
 {
-    // Register file (256 registers)
+    /// \brief Register file (256 registers)
     uint8_t RegFile[256u];
 
-    // Guard zone (catches off-by-one/two/three access for regfile corner-cases)
+    /// \brief Guard zone (catches off-by-one/two/three access for regfile corner-cases)
     uint32_t GuardZone;
 
-    // Current program counter
+    /// \brief Current program counter
     uint32_t PC;
 
-    // Next program counter
+    /// \brief Next program counter
     uint32_t NextPC;
 
-    // Program base address (initial PC)
+    /// \brief Program base address (initial PC)
     uint32_t ProgramBase;
 
-    // Current instruction word
-    uint8_t CurrentOPC[4u];
+    /// \brief State tracker for the debug state
+    ///
+    /// \todo Back-port from assembler implementation (and integrate in the CPU pipeline)
+    uint32_t DbgState;
 
-    // Operand values
+    /// \brief Current instruction word
+    union
+    {
+        /// \brief Byte-wise via (for simpler descriptor construction)
+        uint8_t Bytes[4u];
+
+        /// \brief Word value
+        uint32_t Value;
+    } CurrentOPC;
+
+    /// \brief Operand values
     struct
     {
-        // Current A operand value
+        /// \brief Current A operand value
         uint32_t A;
 
-        // Current B operand value
+        /// \brief Current B operand value
         uint32_t B;
 
-        // Current Z result value
+        /// \brief Current Z result value
         uint32_t Z;
     } Operands;
 
-    // Scratchpad for temporary values
+    /// \brief Scratchpad for temporary values
     uint32_t Scratchpad;
 
-    // Active SBOX (for shared logic pipeline)
+    /// \brief Active SBOX (for shared logic pipeline)
     uint32_t ActiveLogicSbox;
 } Dmacu_Cpu_t;
 
@@ -167,7 +179,22 @@ extern Dmacu_Cpu_t* Dmacu_GetCpu(void);
 /// \brief Runs a program on the DMACU virtual CPU.
 ///
 /// \param[in] initial_pc is the initial program counter for the DMACU program to execute.
+///
 extern void Dmacu_Run(const uint32_t *initial_pc);
+
+/// \brief Configures a DMACU virtual CPU for executing a test small program.
+///
+/// \param[out] cpu points to the CPU state object to be configuzed.
+///
+extern void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu);
+
+/// \brief Dumps the current CPU execution state of the virtual CPU to the standard output.
+///
+/// \param[in] prefix specifies the prefix string to be prepended to each output line.
+///
+/// \param[in] cpu points to the CPU state object to be dumped.
+///
+extern void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu);
 
 //-------------------------------------------------------------------------------------------------
 // Hardware abstraction layer

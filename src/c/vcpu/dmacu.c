@@ -677,7 +677,7 @@ Dma_Declare_Descriptor(Cpu_Fetch_4)
 Dma_PatchSrc(Cpu_Fetch_1, &Cpu_Fetch_2, &gCpu.PC, &Cpu_Fetch_2)
 
 // FE.2: Fetch current instruction into opcode buffer
-Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC[0], DMA_INVALID_ADDR, sizeof(gCpu.CurrentOPC), &Cpu_Fetch_3)
+Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gCpu.CurrentOPC), &Cpu_Fetch_3)
 
 // FE.3: Generate lower 16 bit of next program counter
 
@@ -703,7 +703,7 @@ Dma_Declare_Descriptor(Cpu_Decode_7)
 Dma_Declare_Descriptor(Cpu_Decode_8)
 
 // DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
-//  Major opcode is in CurrentOPC[31:24]
+//  Major opcode is in CurrentOPC.Bytes[31:24]
 //
 // FIXME: Implement Dma_TableSwitch64
 // Dma_TableSwitch64 (.LCpu_Decode.8 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, .LCpu_Decode.2
@@ -711,26 +711,26 @@ Dma_Declare_Descriptor(Cpu_Decode_8)
 // DE.2: Clear the current A. B and Z operand values
 Dma_ByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
 
-// DE.3: Prepare loading the A operand from Regfile[CurrentOPC[7:0]] (rA)
-Dma_PatchSrcLo8(Cpu_Decode_3, &Cpu_Decode_4, &gCpu.CurrentOPC[0u], &Cpu_Decode_4)
+// DE.3: Prepare loading the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
+Dma_PatchSrcLo8(Cpu_Decode_3, &Cpu_Decode_4, &gCpu.CurrentOPC.Bytes[0u], &Cpu_Decode_4)
 
-// DE.4: Load the A operand from Regfile[CurrentOPC[7:0]] (rA)
+// DE.4: Load the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
 //
 // NOTE: We always load rA+1:rA
 Dma_ByteCopy(Cpu_Decode_4, &gCpu.Operands.A, &gCpu.RegFile[0], 2u, &Cpu_Decode_5)
 
-// DE.5: Prepare loading the B operand from Regfile[CurrentOPC[15:8]] (rB)
-Dma_PatchSrcLo8(Cpu_Decode_5, &Cpu_Decode_6, &gCpu.CurrentOPC[1u], &Cpu_Decode_6)
+// DE.5: Prepare loading the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
+Dma_PatchSrcLo8(Cpu_Decode_5, &Cpu_Decode_6, &gCpu.CurrentOPC.Bytes[1u], &Cpu_Decode_6)
 
-// DE.6: Load the B operand from Regfile[CurrentOPC[15:8]] (rB)
+// DE.6: Load the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
 //
 // NOTE: We always load rB+1:rB
 Dma_ByteCopy(Cpu_Decode_6, &gCpu.Operands.B, &gCpu.RegFile[0u], 2u, &Cpu_Decode_7)
 
-// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC[23:16]] (rZ)
-Dma_PatchSrcLo8(Cpu_Decode_7, &Cpu_Decode_8, &gCpu.CurrentOPC[2u], &Cpu_Decode_8)
+// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rZ)
+Dma_PatchSrcLo8(Cpu_Decode_7, &Cpu_Decode_8, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Decode_8)
 
-// DE.8: Load the Z operand from Regfile[CurrentOPC[23:16]] (rB)
+// DE.8: Load the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rB)
 //   Then dispatch to the execute stage (LLI patched by .LCpu_Decode.1)
 //
 // NOTE: We always load rZ+3:rZ+2:rZ+1:rZ+0
@@ -750,19 +750,19 @@ Dma_Declare_Descriptor(Cpu_Writeback_TwoRegs_Commit)
 Dma_Declare_Descriptor(Cpu_Writeback_OneReg_Commit)
 
 // WB.FOUR.1: Setup copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
-Dma_PatchDstLo8(Cpu_Writeback_FourRegs, &Cpu_Writeback_FourRegs_Commit, &gCpu.CurrentOPC[2u], &Cpu_Writeback_FourRegs_Commit)
+Dma_PatchDstLo8(Cpu_Writeback_FourRegs, &Cpu_Writeback_FourRegs_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_FourRegs_Commit)
 
 // WB.FOUR.2: Do copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
 Dma_ByteCopy(Cpu_Writeback_FourRegs_Commit, &gCpu.RegFile[0u], &gCpu.Operands.Z, 4u, &Cpu_Writeback_PC)
 
 // WB.TWO.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
-Dma_PatchDstLo8(Cpu_Writeback_TwoRegs, &Cpu_Writeback_TwoRegs_Commit, &gCpu.CurrentOPC[2u], &Cpu_Writeback_TwoRegs_Commit)
+Dma_PatchDstLo8(Cpu_Writeback_TwoRegs, &Cpu_Writeback_TwoRegs_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_TwoRegs_Commit)
 
 // WB.TWO.2: Do copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
 Dma_ByteCopy(Cpu_Writeback_TwoRegs_Commit, &gCpu.RegFile[0u], &gCpu.Operands.Z, 2u, &Cpu_Writeback_PC)
 
 // WB.ONE.1: Setup copy from CurrentZ[7:0] to Regfile[rZ]
-Dma_PatchDstLo8(Cpu_Writeback_OneReg, &Cpu_Writeback_OneReg_Commit, &gCpu.CurrentOPC[2u], &Cpu_Writeback_OneReg_Commit)
+Dma_PatchDstLo8(Cpu_Writeback_OneReg, &Cpu_Writeback_OneReg_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_OneReg_Commit)
 
 // WB.ONE.2: Do copy from CurrentZ[7:0] to Regfile[rZ]
 Dma_ByteCopy(Cpu_Writeback_OneReg_Commit, &gCpu.RegFile[0], &gCpu.Operands.Z, 1u, &Cpu_Writeback_PC)
@@ -818,7 +818,7 @@ Cpu_Op\name:
 	 * | 0x01 | rZ   | (0)  | imm8 |
 	 * +------+------+------+------+
 	*/
-	// Copy from CurrentOPC[7:0] to CurrentZ, then link to one register writeback
+	// Copy from CurrentOPC.Bytes[7:0] to CurrentZ, then link to one register writeback
 Cpu_Opcode_Begin MovImm
 	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 1, .LCpu_Writeback.OneReg
 Cpu_Opcode_End MovImm
@@ -832,7 +832,7 @@ Cpu_Opcode_End MovImm
 	 * +------+------+-------------+
 	*/
 Cpu_Opcode_Begin Mov2Imm
-	// Copy from CurrentOPC[15:0] to CurrentZ, then link to one register writeback
+	// Copy from CurrentOPC.Bytes[15:0] to CurrentZ, then link to one register writeback
 	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 2, .LCpu_Writeback.TwoRegs
 Cpu_Opcode_End Mov2Imm
 
