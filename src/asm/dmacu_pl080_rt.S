@@ -375,7 +375,7 @@ Lut_Scratchpad:
 	.endm
 
 	/*-----------------------------------------------------------------------------------------
-	 * Lookup tables for Unary Functions (uint8_t x uint8_t -> uint8_t)
+	 * Lookup tables for Unary Functions (uint8_t -> uint8_t)
 	 *-----------------------------------------------------------------------------------------*/
 	/**
 	 * Bitwise Complement (1's complement)
@@ -454,7 +454,7 @@ Lut_Scratchpad:
 	Lut_End RotateLeft
 
 	/*
-	 * Extract Lower Nibble / Mask with 0xF0
+	 * Extract Lower Nibble / Mask with 0x0F
 	 *
 	 * C model:
 	 *   uint8_t Lo4(const uint8_t a)
