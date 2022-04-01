@@ -194,34 +194,35 @@
 ///
 #define Dma_Sbox8_PatchTableImm(_self,_lookup,_tableptr,_lli) \
     /* We patch the SBOX in step 2 of the lookup in the Dma_Sbox8 macro */ \
-    Dma_Declare_Local_Descriptor(_lookup, Sbox8_Lookup) \
-    Dma_PatchSrc(_self, Dma_Local_Reference(_lookup, Sbox8_Lookup), (_tableptr), (_lli))
+    Dma_Declare_Local_Descriptor(_self, Sbox8_Lookup) \
+    Dma_PatchSrc(_self, Dma_Local_Reference(_self, Sbox8_Lookup), (_tableptr), (_lli))
 
-#if 0
-/**
- * Reads a byte from "src", looks up the matching word from the table at "table" and stores
- * the (word) result at "dst". Then links to the next descriptor at "lli".
- *
- * C model:
- *   void Dma_TableSwitch64(uint32_t* dst, const uint8_t* src, const uint32_t table[64u])
- *   {
- *     *dst = table[*src % 64u];
- *   }
- *
- * Constraints:
- *  The value table must be aligned on a 256 byte boundary. The byte value at "src" must be
- *  should be in range 0..63 (the construction of Lut_TableSwitch64 ensures that byte values >=64
- *  are reduced modulo 64 for purpose of lookup address generation).
- */
-	.macro Dma_TableSwitch64 dst, src, table, lli
-.LDma_TableSwitch_PrepareLookup\@:
-	Dma_Sbox8 (.LDma_TableSwitch_DoLookup\@ + 0), \src, Lut_Mul4, .LDma_TableSwitch_DoLookup\@
-
-	// Step 2: Read a 4-byte value from the table.
-.LDma_TableSwitch_DoLookup\@:
-	Dma_ByteCopy \dst, \table, 4, \lli
-	.endm
-#endif
+// Reads a byte from "src", looks up the matching word from the table at "table" and stores
+// the (word) result at "dst". Then links to the next descriptor at "lli".
+//
+// C model:
+//   void Dma_TableSwitch64(uint32_t* dst, const uint8_t* src, const uint32_t table[64u])
+//   {
+//     *dst = table[*src % 64u];
+//   }
+//
+// Constraints:
+//  The value table must be aligned on a 256 byte boundary. The byte value at "src" must be
+//  should be in range 0..63 (the construction of Lut_TableSwitch64 ensures that byte values >=64
+//  are reduced modulo 64 for purpose of lookup address generation).
+//
+#define Dma_TableSwitch64(_self,_dst,_src,_table,_lli) \
+	/* Step 1: Patch the byte-copy operation that performs the fetch from the table lookup */ \
+	/*         We actually perform an SBOX lookup into the multiply-by-4 LUT for the patch */ \
+	Dma_Declare_Local_Descriptor(_self, TableSwitch_DoLookup) \
+	Dma_Sbox8(_self, \
+		&Dma_Local_Reference(_self, TableSwitch_DoLookup)->src, \
+		(_src), \
+		&Lut_Mul4[0u], \
+		Dma_Local_Reference(_self, TableSwitch_DoLookup) \
+	) \
+	/* Step 2: Read a 4-byte value from the table. */ \
+	Dma_ByteCopy(Dma_Local_Name(_self, TableSwitch_DoLookup), (_dst), (_table), 4u, (_lli))
 
 //-------------------------------------------------------------------------------------------------
 // Lookup tables for Unary Functions (uint8_t -> uint8_t)
@@ -687,7 +688,6 @@ Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gC
 // FE.4: Copy upper 16 bit of program counter then link to decode stage
 Dma_ByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
 
-
 //-----------------------------------------------------------------------------------------
 //
 // DMACU CPU Decode Stage
@@ -706,7 +706,7 @@ Dma_Declare_Descriptor(Cpu_Decode_8)
 //  Major opcode is in CurrentOPC.Bytes[31:24]
 //
 // FIXME: Implement Dma_TableSwitch64
-// Dma_TableSwitch64 (.LCpu_Decode.8 + 8), (Cpu_CurrentOPC + 3), Lut_InstructionTable, .LCpu_Decode.2
+Dma_TableSwitch64(Cpu_Decode_1, &Cpu_Decode_2.dst, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
 
 // DE.2: Clear the current A. B and Z operand values
 Dma_ByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
