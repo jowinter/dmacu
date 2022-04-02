@@ -18,6 +18,7 @@
 //-----------------------------------------------------------------------------------------
 ///  \brief Static test program
 ///
+DMACU_ALIGNED(0x2000)
 static const uint32_t gTestProgram[] =
 {
 	UINT32_C(0x01000008), // +0x000 MOV r0,    0x08
@@ -29,12 +30,16 @@ static const uint32_t gTestProgram[] =
 	UINT32_C(0x08000008), // +0x014 JMP #0x008
 
 	UINT32_C(0x0C010408), // +0x018 BNE (+0x08) r1, #0x04
-	UINT32_C(0x1F00DEAD), // +0x020 UND #0x00DEAD
+	UINT32_C(0x08000038), // +0x020 JMP #0x034
 	UINT32_C(0x04000003), // +0x024 ADD r0, r0, #0x01
 	UINT32_C(0x040101FF), // +0x028 ADD r1, r1, #0xFF
 	UINT32_C(0x0E020000), // +0x02C NOT r2, r0
 	UINT32_C(0x11030201), // +0x030 EOR r3, r2, r1
 	UINT32_C(0x08000018), // +0x034 JMP #0x018
+
+	UINT32_C(0x02FC5AA5), // +0x038 MOV r253:r252, #0x5AA5
+	UINT32_C(0x02FEC0DE), // +0x03C MOV r255:r254, #0xC0DE
+	UINT32_C(0x1F00DEAD), // +0x040 UND #0x00DEAD
 };
 
 //-----------------------------------------------------------------------------------------
