@@ -24,7 +24,11 @@
 #endif
 
 #ifndef DMACU_PRIVATE
-# define DMACU_PRIVATE static
+# define DMACU_PRIVATE // static
+#endif
+
+#ifndef DMACU_PRIVATE_DECL
+# define DMACU_PRIVATE_DECL extern
 #endif
 
 /// \brief 32-bit pointer type for the virtual CPU emulator.
@@ -78,11 +82,11 @@ typedef struct Dma_Descriptor
 
 /// \brief (Re-)declares an externally visible DMA descriptor
 #define Dma_Declare_Descriptor(_self) \
-    DMACU_PRIVATE Dma_Descriptor_t _self;
+    DMACU_PRIVATE_DECL Dma_Descriptor_t _self;
 
 /// \brief (Re-)declares a local DMA descriptor
 #define Dma_Declare_Local_Descriptor(_self,_suffix) \
-    DMACU_PRIVATE Dma_Descriptor_t Dma_Local_Name(_self,_suffix);
+    DMACU_PRIVATE_DECL Dma_Descriptor_t Dma_Local_Name(_self,_suffix);
 
 /// \brief References a declared descriptor
 #define Dma_Local_Reference(_self,_suffix) \

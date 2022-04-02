@@ -415,96 +415,96 @@ DMACU_PRIVATE const uint8_t Lut_Mul16[256u] =
 //   This macro defines local labels "1" and "2" to enable seamless interaction with Dma_LogicSbox4_Indirect
 //
 #define Dma_LogicSbox4(_self,_dst,_src1,_src2,_table,_lli) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo4_B) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo4_Mul16_B) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo_Combine) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo_Lookup) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_A) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_B) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_Mul16_B) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Combine) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Lookup) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Shift) \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Result) \
 	/* Step 1: Extract lower 4 bits of operand A into t0 */ \
-	Dma_Declare_Local_Descriptor(_self,LogicSbox4_Lo4_B) \
 	Dma_Sbox8(_self, \
 		&Lut_Scratchpad[0u], \
 		(_src1), \
 		&Lut_Lo4[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Lo4_B) \
+		Dma_Local_Reference(_self, LogicSbox4_Lo4_B) \
 	) \
 	/* Step 2: Extract lower 4 bits of operand B into t1 */ \
-	Dma_Declare_Local_Descriptor(_self,LogicSbox4_Lo4_Mul16_B) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Lo4_B), \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Lo4_B), \
 		&Lut_Scratchpad[1u], \
 		(_src2), \
 		&Lut_Lo4[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Lo4_Mul16_B) \
+		Dma_Local_Reference(_self, LogicSbox4_Lo4_Mul16_B) \
 	) \
 	/* Step 3: Multiply t1 by 16 */ \
-	Dma_Declare_Local_Descriptor(_self,LDma_LogicSbox4_Lo_Combine) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Lo4_Mul16_B), \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Lo4_Mul16_B), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[1u], \
 		&Lut_Mul16[0u], \
-		Dma_Local_Reference(_self,LDma_LogicSbox4_Lo_Combine) \
+		Dma_Local_Reference(_self, LogicSbox4_Lo_Combine) \
 	) \
 	/* Step 4: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT */ \
-	Dma_Declare_Local_Descriptor(_self, ) \
-	Dma_Add8(Dma_Local_Name(_self,LDma_LogicSbox4_Lo_Combine), \
+	Dma_Add8(Dma_Local_Name(_self, LogicSbox4_Lo_Combine), \
 		 &Lut_Scratchpad[2u], \
 		 &Lut_Scratchpad[1u], \
 		 &Lut_Scratchpad[0u], \
-		 Dma_Local_Reference(_self,LogicSbox4_Lo_Lookup) \
+		 Dma_Local_Reference(_self, LogicSbox4_Lo_Lookup) \
 	) \
 	/* Step 5: Lookup on lower 4 bits */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_A) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Lo_Lookup) \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Lo_Lookup), \
 		 &Lut_Scratchpad[2u], \
 		 &Lut_Scratchpad[2u], \
 		 (_table), \
-		 Dma_Local_Reference(_self,LogicSbox4_Hi4_A) \
+		 Dma_Local_Reference(_self, LogicSbox4_Hi4_A) \
 	) \
 	/* Step 6: Extract lower 4 bits of operand A into t0 */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_B) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi4_A) \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Hi4_A), \
 		&Lut_Scratchpad[0u], \
 		(_src1), \
 		&Lut_Hi4[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Hi4_B) \
+		Dma_Local_Reference(_self, LogicSbox4_Hi4_B) \
 	) \
 	/* Step 7: Extract lower 4 bits of operand B into t1 */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_Mul16_B) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi4_B) \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Hi4_B), \
 		&Lut_Scratchpad[1u], \
 		(_src2), \
 		&Lut_Hi4[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Hi4_Mul16_B) \
+		Dma_Local_Reference(_self, LogicSbox4_Hi4_Mul16_B) \
 	) \
 	/* Step 8: Multiply t1 by 16 */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Combine) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi4_Mul16_B) \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Hi4_Mul16_B), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[1u], \
 		&Lut_Mul16[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Hi_Combine) \
+		Dma_Local_Reference(_self, LogicSbox4_Hi_Combine) \
 	) \
 	/* Step 9: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Lookup) \
-	Dma_Add8(Dma_Local_Name(_self,LogicSbox4_Hi_Combine) \
+	Dma_Add8(Dma_Local_Name(_self, LogicSbox4_Hi_Combine), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Hi_Lookup) \
+		Dma_Local_Reference(_self, LogicSbox4_Hi_Lookup) \
 	) \
 	/* Step 10: Lookup on upper 4 bits */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Shift) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi_Lookup) \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Hi_Lookup), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[1u], \
 		(_table), \
-		Dma_Local_Reference(_self,LogicSbox4_Hi_Shift) \
+		Dma_Local_Reference(_self, LogicSbox4_Hi_Shift) \
 	) \
 	/* Step 11: Shift lookup result for higer bits by 4 bits */ \
-	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Result) \
-	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi_Shift) \
+	Dma_Sbox8(Dma_Local_Name(_self, LogicSbox4_Hi_Shift), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[1u], \
 		&Lut_Mul16[0u], \
-		Dma_Local_Reference(_self,LogicSbox4_Result) \
+		Dma_Local_Reference(_self, LogicSbox4_Result) \
 	) \
 	/* Step 12: Assemble the result, then link to writeback */ \
-	Dma_Add8(Dma_Local_Name(_self,LogicSbox4_Result) \
+	Dma_Add8(Dma_Local_Name(_self, LogicSbox4_Result), \
 		(_dst), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[2u], \
@@ -838,7 +838,7 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 
 //-----------------------------------------------------------------------------------------
 //
-// Arithmetic helpers for the CPU
+// Arithmetic/Logic helpers for the CPU
 //
 //-----------------------------------------------------------------------------------------
 
@@ -902,6 +902,25 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 		(Dma_PtrToAddr(_src1) + 1u), \
 		&gCpu.Scratchpad[0u], \
 		(_lli) \
+	)
+
+//
+// 8-bit arbitrary logic function (AND/OR/XOR)
+//
+// Storing a full LUT for 8-bit inputs src1 and src2 would require 64k entries. We use a divide and conquer
+// approach to implement 8-bit logic functions on top of 4-bit x 4-bit LUT:
+//
+// FIXME: Back-port the shared Cpu_Execute_Logic chain from the assembler implementation (this saves
+// significantly on space, as we only need _one_ instance of Dma_LogicSbox4 from a constant sbox).
+//
+#define Cpu_LogicSbox4(_self,_table) \
+	/* In-place implementation  */ \
+	Dma_LogicSbox4(_self, \
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), \
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u), \
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u), \
+		(_table), \
+		&Cpu_Writeback_OneReg \
 	)
 
 //-----------------------------------------------------------------------------------------
@@ -1344,13 +1363,13 @@ Cpu_Opcode_Begin(JmpImm16)
 	)
 Cpu_Opcode_End(JmpImm16)
 
-// 
+//
 // JMP rB:rA                    - Jump register indirect
-// 
+//
 // +------+------+------+------+
 // | 0x09 |  (0) | rB   | rA   |
 // +------+------+------+------+
-// 
+//
 Cpu_Opcode_Begin(JmpReg16)
 	Dma_Declare_Descriptor(Cpu_OpJmpReg16_2)
 
@@ -1372,206 +1391,287 @@ Cpu_Opcode_Begin(JmpReg16)
 	)
 Cpu_Opcode_End(JmpReg16)
 
-
-#if IMPLEMENTED
-
-	/*
-	 * BNE (+off8) rZ, rB                   - Branch if not equal
-	 *
-	 * +------+------+------+------+
-	 * | 0x0A |  rZ  | rB   | off8 |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BrNeReg
+//
+// BNE (+off8) rZ, rB                   - Branch if not equal
+//
+// +------+------+------+------+
+// | 0x0A |  rZ  | rB   | off8 |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BrNeReg)
 	// Copy rB value into imm8 field, to BrNeImm
-	Dma_ByteCopy &gCpu.CurrentOPC.Bytes[1u], (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), 1, Cpu_OpBrNeImm
-Cpu_Opcode_End   BrNeReg
+	Dma_ByteCopy(Cpu_OpBrNeReg_1,
+		&gCpu.CurrentOPC.Bytes[1u],
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		1u,
+		&Cpu_OpBrNeImm_1
+	)
+Cpu_Opcode_End(BrNeReg)
 
-	/*
-	 * BEQ (+off8) rZ, rB                   - Branch if equal
-	 *
-	 * +------+------+------+------+
-	 * | 0x0B |  rZ  | rB   | off8 |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BrEqReg
+//
+// BEQ (+off8) rZ, rB                   - Branch if equal
+//
+// +------+------+------+------+
+// | 0x0B |  rZ  | rB   | off8 |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BrEqReg)
 	// Copy rB value into imm8 field, to BrEqImm
-	Dma_ByteCopy &gCpu.CurrentOPC.Bytes[1u], (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), 1, Cpu_OpBrEqImm
-Cpu_Opcode_End BrEqReg
+	Dma_ByteCopy(Cpu_OpBrEqReg_1,
+		&gCpu.CurrentOPC.Bytes[1u],
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		1u,
+		&Cpu_OpBrEqImm_1
+	)
+Cpu_Opcode_End(BrEqReg)
 
+//
+// BNE (+off8) rZ, #imm8                - Branch if not equal
+//
+// +------+------+------+------+
+// | 0x0C |  rZ  | imm8 | off8 |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BrNeImm)
+	Dma_Declare_Descriptor(Cpu_OpBrNeImm_2)
+	Dma_Declare_Descriptor(Cpu_OpBrNeImm_3)
+	Dma_Declare_Descriptor(Cpu_OpBrNeImm_4)
+	Dma_Declare_Descriptor(Cpu_OpBrNeImm_5)
+	Dma_Declare_Descriptor(Cpu_OpBrNeImm_6)
 
-	/*
-	 * BNE (+off8) rZ, #imm8                - Branch if not equal
-	 *
-	 * +------+------+------+------+
-	 * | 0x0C |  rZ  | imm8 | off8 |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BrNeImm
-
-Cpu_OpBrNeImm.1:
 	// Fill the temporary LUT with the offset for branch taken (+off8)
-	Dma_ByteFill Lut_Temporary, &gCpu.CurrentOPC.Bytes[0u], 256, Cpu_OpBrNeImm.2
+	Dma_ByteFill(Cpu_OpBrNeImm_1,
+		&Lut_Temporary[0u],
+		&gCpu.CurrentOPC.Bytes[0u],
+		256u,
+		&Cpu_OpBrNeImm_2
+	)
 
-Cpu_OpBrNeImm.2:
 	// Prepare for patching the match location with offset for branch not taken (+4)
-	Dma_PatchDstLo8 Cpu_OpBrNeImm.3, &gCpu.CurrentOPC.Bytes[1u], Cpu_OpBrNeImm.3
+	Dma_PatchDstLo8(Cpu_OpBrNeImm_2,
+		&Cpu_OpBrNeImm_3,
+		&gCpu.CurrentOPC.Bytes[1u],
+		&Cpu_OpBrNeImm_3
+	)
 
-Cpu_OpBrNeImm.3:
 	// Patch the branch not taken location in the temporary LUT
-	Dma_ByteCopy Lut_Temporary, Lit_04, 1, Cpu_OpBrNeImm.4
+	Dma_ByteCopy(Cpu_OpBrNeImm_3,
+		&Lut_Temporary[0u],
+		Dmacu_PtrToByteLiteral(4u),
+		1u,
+		&Cpu_OpBrNeImm_4
+	)
 
-Cpu_OpBrNeImm.4:
 	// Lookup the branch offset from the temporary LUT
-	Dma_Sbox8 (Cpu_Scratchpad + 1), (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), Lut_Temporary, Cpu_OpBrNeImm.5
+	Dma_Sbox8(Cpu_OpBrNeImm_4,
+		&gCpu.Scratchpad[1u],
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		&Lut_Temporary[0u],
+		&Cpu_OpBrNeImm_5
+	)
 
-Cpu_OpBrNeImm.5:
 	// Update the lower 16-bits of the next PC (keep upper 16 bits intact)
-	Cpu_Add8To16 (Dma_PtrToAddr(&gCpu.NextPC) + 0u), (Cpu_PC + 0), (Cpu_Scratchpad + 1), Cpu_OpBrNeImm.6
+	Cpu_Add8to16(Cpu_OpBrNeImm_5,
+		(Dma_PtrToAddr(&gCpu.NextPC) + 0u),
+		(Dma_PtrToAddr(&gCpu.PC) + 0u),
+		&gCpu.Scratchpad[1u],
+		&Cpu_OpBrNeImm_6
+	)
 
-Cpu_OpBrNeImm.6:
 	// Clip the upper 16 bit
-	Dma_ByteCopy (Dma_PtrToAddr(&gCpu.NextPC) + 2u), (Cpu_PC + 2), 2, .LCpu_Writeback.PC
-Cpu_Opcode_End   BrNeImm
+	Dma_ByteCopy(Cpu_OpBrNeImm_6,
+		(Dma_PtrToAddr(&gCpu.NextPC) + 2u),
+		(Dma_PtrToAddr(&gCpu.PC) + 2u),
+		2u,
+		&Cpu_Writeback_PC
+	)
+Cpu_Opcode_End(BrNeImm)
 
-	/*
-	 * BEQ (+off8) rZ, #imm8                - Branch if equal
-	 *
-	 * +------+------+------+------+
-	 * | 0x0D |  rZ  | imm8 | off8 |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BrEqImm
-Cpu_OpBrEqImm.1:
+//
+// BEQ (+off8) rZ, #imm8                - Branch if equal
+//
+// +------+------+------+------+
+// | 0x0D |  rZ  | imm8 | off8 |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BrEqImm)
+	Dma_Declare_Descriptor(Cpu_OpBrEqImm_2)
+	Dma_Declare_Descriptor(Cpu_OpBrEqImm_3)
+
 	// Fill the temporary LUT with the offset for branch not taken (+4)
-	Dma_ByteFill Lut_Temporary, Lit_04, 256, Cpu_OpBrEqImm.2
+	Dma_ByteFill(Cpu_OpBrEqImm_1,
+		&Lut_Temporary[0u],
+		Dmacu_PtrToByteLiteral(4u),
+		256u,
+		&Cpu_OpBrEqImm_2
+	)
 
-Cpu_OpBrEqImm.2:
 	// Prepare for patching the match location with offset for branch not taken (+4)
-	Dma_PatchDstLo8 Cpu_OpBrEqImm.3, &gCpu.CurrentOPC.Bytes[1u], Cpu_OpBrEqImm.3
+	Dma_PatchDstLo8(Cpu_OpBrEqImm_2,
+		&Cpu_OpBrEqImm_3,
+		&gCpu.CurrentOPC.Bytes[1u],
+		&Cpu_OpBrEqImm_3
+	)
 
-Cpu_OpBrEqImm.3:
-	// Patch the branch taken location in the temporary LUT; then tail-call to the BrNeImm implemntation
-	Dma_ByteCopy Lut_Temporary, &gCpu.CurrentOPC.Bytes[0u], 1, Cpu_OpBrNeImm.4
-Cpu_Opcode_End BrEqImm
+	// Patch the branch taken location in the temporary LUT; then tail-call to the BrNeImm implemntation (from stage 4)
+	Dma_ByteCopy(Cpu_OpBrEqImm_3,
+		&Lut_Temporary[0u],
+		&gCpu.CurrentOPC.Bytes[0u],
+		1u,
+		&Cpu_OpBrNeImm_4
+	)
+Cpu_Opcode_End(BrEqImm)
 
-	/*
-	 * NOT rZ, rB                      - Bitwise NOT
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x0E |  rZ  | rB   | (0)  |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BitNot
+//
+// NOT rZ, rB                      - Bitwise NOT
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x0E |  rZ  | rB   | (0)  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BitNot)
 	// Lookup via bitwise NOT table
-	Dma_Sbox8 (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Lut_BitNot, &Cpu_Writeback_OneReg
-Cpu_Opcode_End BitNot
+	Dma_Sbox8(Cpu_OpBitNot_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Lut_BitNot[0u],
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(BitNot)
 
-	/*
-	 * AND rZ, rB, rA                  - Bitwise AND
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x0F |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BitAnd
+//
+// AND rZ, rB, rA                  - Bitwise AND
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x0F |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BitAnd)
 	// Lookup via 4-bit x 4-bit logic AND LUT
-	Cpu_LogicSbox4 Lut_BitAnd
-Cpu_Opcode_End BitAnd
+	Cpu_LogicSbox4(Cpu_OpBitAnd_1, &Lut_BitAnd[0u])
+Cpu_Opcode_End(BitAnd)
 
-	/*
-	 * OR  rZ, rB, rA                  - Bitwise OR
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x10 |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BitOr
+//
+// OR  rZ, rB, rA                  - Bitwise OR
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x10 |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BitOr)
 	// Lookup via 4-bit x 4-bit logic AND LUT
-	Cpu_LogicSbox4 Lut_BitOr
-Cpu_Opcode_End BitOr
+	Cpu_LogicSbox4(Cpu_OpBitOr_1, &Lut_BitOr[0u])
+Cpu_Opcode_End(BitOr)
 
-	/*
-	 * EOR rZ, rB, rA                  - Bitwise XOR
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x11 |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin BitEor
+//
+// EOR rZ, rB, rA                  - Bitwise XOR
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x11 |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(BitEor)
 	// Lookup via 4-bit x 4-bit logic EOR LUT
-	Cpu_LogicSbox4 Lut_BitEor
-Cpu_Opcode_End BitEor
+	Cpu_LogicSbox4(Cpu_OpBitEor_1, &Lut_BitEor[0u])
+Cpu_Opcode_End(BitEor)
 
-	/*
-	 * ROR rZ, rB, #1                  - Rotate-Right by 1
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x12 |  rZ  | rB   | (0)  |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin Ror
+//
+// ROR rZ, rB, #1                  - Rotate-Right by 1
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x12 |  rZ  | rB   | (0)  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(Ror)
 	// Lookup via ROR table
-	Dma_Sbox8 (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Lut_RotateRight, &Cpu_Writeback_OneReg
-Cpu_Opcode_End Ror
+	Dma_Sbox8(Cpu_OpRor_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Lut_RotateRight[0u],
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(Ror)
 
-	/*
-	 * ROL rZ, rB, #1                  - Rotate-Left by 1
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x13 |  rZ  | rB   | (0)  |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin Rol
+
+//
+// ROL rZ, rB, #1                  - Rotate-Left by 1
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x13 |  rZ  | rB   | (0)  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(Rol)
 	// Lookup via ROL table (note: could also be done as 8 times ROR)
-	Dma_Sbox8 (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Lut_RotateLeft, &Cpu_Writeback_OneReg
-Cpu_Opcode_End Rol
+	Dma_Sbox8(Cpu_OpRol_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Lut_RotateLeft[0u],
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(Rol)
 
-	/*
-	 * LO4 rZ, rB                      - Extract lower 4 bits
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x14 |  rZ  | rB   | (0)  |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin Lo4
+//
+// LO4 rZ, rB                      - Extract lower 4 bits
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x14 |  rZ  | rB   | (0)  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(Lo4)
 	// Lookup via bitwise LO4 table
-	Dma_Sbox8 (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Lut_Lo4, &Cpu_Writeback_OneReg
-Cpu_Opcode_End Lo4
+	Dma_Sbox8(Cpu_OpLo4_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Lut_Lo4[0u],
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(Lo4)
 
-	/*
-	 * HI4 rZ, rB                      - Extract upper 4 bits
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x15 |  rZ  | rB   | (0)  |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin Hi4
+//
+// HI4 rZ, rB                      - Extract upper 4 bits
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x15 |  rZ  | rB   | (0)  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(Hi4)
 	// Lookup via bitwise HI4 table
-	Dma_Sbox8 (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Lut_Hi4, &Cpu_Writeback_OneReg
-Cpu_Opcode_End Hi4
+	Dma_Sbox8(Cpu_OpHi4_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Lut_Hi4[0u],
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(Hi4)
 
-	/*
-	 * SHL4 rZ, rB                     - Shift left by 4 bits
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x16 |  rZ  | rB   | (0)  |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin Shl4
+//
+// SHL4 rZ, rB                     - Shift left by 4 bits
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x16 |  rZ  | rB   | (0)  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(Shl4)
 	// Lookup via bitwise SHL4 table
-	Dma_Sbox8 (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Lut_Mul16, &Cpu_Writeback_OneReg
-Cpu_Opcode_End Shl4
+	Dma_Sbox8(Cpu_OpShl4_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Lut_Mul16[0u],
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(Shl4)
 
+
+#if NOT_IMPLMENETED
 	/*
 	 * JAL rZ+1:rZ, #imm16             - Jump and Link
 	 *
