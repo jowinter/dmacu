@@ -53,7 +53,7 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 			for (uint32_t i = 0u; i < size; ++i)
 			{
 #if LOG_DMA
-				printf(" %02X", (unsigned) (src[i] & 0xFFu));
+				printf(" %02X", (unsigned) (src[src_off] & 0xFFu));
 #endif
 				dst[dst_off] = src[src_off];
 

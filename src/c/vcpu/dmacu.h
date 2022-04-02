@@ -105,7 +105,7 @@ typedef struct Dma_Descriptor
 /// Fills a block of "size" bytes at "dst" with the byte found at "src". Then links to the
 /// next descriptor at "lli".
 ///
-#define Dma_ByteFill(_self, _dst,_src,_size,_lli) \
+#define Dma_ByteFill(_self,_dst,_src,_size,_lli) \
     Dma_Define_Descriptor(_self, \
         .src  = (Dma_UIntPtr_t) (_src), \
         .dst  = (Dma_UIntPtr_t) (_dst), \
@@ -162,7 +162,7 @@ typedef struct Dmacu_Cpu
     } Operands;
 
     /// \brief Scratchpad for temporary values
-    uint32_t Scratchpad;
+    uint8_t Scratchpad[4u];
 
     /// \brief Active SBOX (for shared logic pipeline)
     uint32_t ActiveLogicSbox;

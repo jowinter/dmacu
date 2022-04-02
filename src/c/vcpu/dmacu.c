@@ -224,6 +224,11 @@
 	/* Step 2: Read a 4-byte value from the table. */ \
 	Dma_ByteCopy(Dma_Local_Name(_self, TableSwitch_DoLookup), (_dst), (_table), 4u, (_lli))
 
+
+// Temporary LUTs
+DMACU_ALIGNED(256u) DMACU_PRIVATE uint8_t Lut_Temporary[256u];
+DMACU_PRIVATE uint8_t Lut_Scratchpad[16u];
+
 //-------------------------------------------------------------------------------------------------
 // Lookup tables for Unary Functions (uint8_t -> uint8_t)
 //
@@ -387,6 +392,171 @@ DMACU_PRIVATE const uint8_t Lut_Mul16[256u] =
 //
 //-----------------------------------------------------------------------------------------
 
+//
+// 8-bit arbitrary logic function (AND/OR/XOR) with 2 inputs.
+//
+// Reads two source bytes from "src1" and "src2", applies the logic function described
+// by the 4-bit x 4-bit lookup table "table" and stores the result in "dst". Then links
+// to next descriptor at "lli".
+//
+// Storing a full LUT for 8-bit inputs src1 and src2 would require 64k entries. We use a divide and conquer
+// approach to implement 8-bit logic functions on top of 4-bit x 4-bit LUT:
+//
+// C model:
+//   void Dma_LogicSbox4(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, const uint8_t *table)
+//   {
+//      uint lo = table[(*src1 & 0x0F) + ((*src2 & 0x0F) << 4u)];
+//      uint hi = table[((*src1 >> 4) & 0x0F) + (((*src2 >> 4) & 0x0F) << 4u)];
+//      *dst = (hi << 4) + lo;
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Scratchpad for processing.
+//   This macro defines local labels "1" and "2" to enable seamless interaction with Dma_LogicSbox4_Indirect
+//
+#define Dma_LogicSbox4(_self,_dst,_src1,_src2,_table,_lli) \
+	/* Step 1: Extract lower 4 bits of operand A into t0 */ \
+	Dma_Declare_Local_Descriptor(_self,LogicSbox4_Lo4_B) \
+	Dma_Sbox8(_self, \
+		&Lut_Scratchpad[0u], \
+		(_src1), \
+		&Lut_Lo4[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Lo4_B) \
+	) \
+	/* Step 2: Extract lower 4 bits of operand B into t1 */ \
+	Dma_Declare_Local_Descriptor(_self,LogicSbox4_Lo4_Mul16_B) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Lo4_B), \
+		&Lut_Scratchpad[1u], \
+		(_src2), \
+		&Lut_Lo4[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Lo4_Mul16_B) \
+	) \
+	/* Step 3: Multiply t1 by 16 */ \
+	Dma_Declare_Local_Descriptor(_self,LDma_LogicSbox4_Lo_Combine) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Lo4_Mul16_B), \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[1u], \
+		&Lut_Mul16[0u], \
+		Dma_Local_Reference(_self,LDma_LogicSbox4_Lo_Combine) \
+	) \
+	/* Step 4: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT */ \
+	Dma_Declare_Local_Descriptor(_self, ) \
+	Dma_Add8(Dma_Local_Name(_self,LDma_LogicSbox4_Lo_Combine), \
+		 &Lut_Scratchpad[2u], \
+		 &Lut_Scratchpad[1u], \
+		 &Lut_Scratchpad[0u], \
+		 Dma_Local_Reference(_self,LogicSbox4_Lo_Lookup) \
+	) \
+	/* Step 5: Lookup on lower 4 bits */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_A) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Lo_Lookup) \
+		 &Lut_Scratchpad[2u], \
+		 &Lut_Scratchpad[2u], \
+		 (_table), \
+		 Dma_Local_Reference(_self,LogicSbox4_Hi4_A) \
+	) \
+	/* Step 6: Extract lower 4 bits of operand A into t0 */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_B) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi4_A) \
+		&Lut_Scratchpad[0u], \
+		(_src1), \
+		&Lut_Hi4[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Hi4_B) \
+	) \
+	/* Step 7: Extract lower 4 bits of operand B into t1 */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_Mul16_B) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi4_B) \
+		&Lut_Scratchpad[1u], \
+		(_src2), \
+		&Lut_Hi4[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Hi4_Mul16_B) \
+	) \
+	/* Step 8: Multiply t1 by 16 */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Combine) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi4_Mul16_B) \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[1u], \
+		&Lut_Mul16[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Hi_Combine) \
+	) \
+	/* Step 9: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Lookup) \
+	Dma_Add8(Dma_Local_Name(_self,LogicSbox4_Hi_Combine) \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Hi_Lookup) \
+	) \
+	/* Step 10: Lookup on upper 4 bits */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Shift) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi_Lookup) \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[1u], \
+		(_table), \
+		Dma_Local_Reference(_self,LogicSbox4_Hi_Shift) \
+	) \
+	/* Step 11: Shift lookup result for higer bits by 4 bits */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Result) \
+	Dma_Sbox8(Dma_Local_Name(_self,LogicSbox4_Hi_Shift) \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[1u], \
+		&Lut_Mul16[0u], \
+		Dma_Local_Reference(_self,LogicSbox4_Result) \
+	) \
+	/* Step 12: Assemble the result, then link to writeback */ \
+	Dma_Add8(Dma_Local_Name(_self,LogicSbox4_Result) \
+		(_dst), \
+		&Lut_Scratchpad[1u], \
+		&Lut_Scratchpad[2u], \
+		(_lli) \
+	)
+
+//
+// 8-bit arbitrary logic function (AND/OR/XOR) with 2 inputs.
+//
+// This operation is a variant of Dma_LogicSbox4, which indirecly fetches
+// the pointer to the logic lookup table. It can be used to factor-out the
+// logic operations into a reusable descriptor chain.
+//
+// See Dma_LogicSbox4 for details on the operation.
+//
+// C model:
+//   void Dma_LogicSbox4_Indirect(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, const uint8_t *const *pointer_to_table)
+//   {
+//      const uint8_t *table = *pointer_to_table ;
+//      Dma_LogicSbox4(dst, src1, src2, table)
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Scratchpad for processing
+//   This macro defines local labels "1" and "2" to enable seamless interaction with Dma_LogicSbox4
+//
+#define Dma_LogicSbox4_Indirect(_dst,_src1,_src2,_pointer_to_table,_lli) \
+	/* Step 1: Patch the first source lookup location */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Indirect_PatchHi) \
+	Dma_Declare_Local_Descriptor(Dma_Local_Name(_self,LogicSbox4_Indirect_Exec),LogicSbox4_Lo_Lookup) \
+	Dma_Sbox8_PatchTableImm(_self, \
+		Dma_Local_Reference(Dma_Local_Name(_self,LogicSbox4_Indirect_Exec),LogicSbox4_Lo_Lookup), \
+		(_pointer_to_table), \
+		Dma_Local_Reference(_self,LogicSbox4_Indirect_PatchHi) \
+	) \
+	/* Step 2: Patch the second source lookup location and link */ \
+	Dma_Declare_Local_Descriptor(_self, LogicSbox4_Indirect_Exec) \
+	Dma_Declare_Local_Descriptor(Dma_Local_Name(_self,LogicSbox4_Indirect_Exec),LogicSbox4_Hi_Lookup) \
+	Dma_Sbox8_PatchTableImm(Dma_Local_Name(_self, LogicSbox4_Indirect_Exec), \
+		Dma_Local_Reference(Dma_Local_Name(_self,LogicSbox4_Indirect_Exec),LogicSbox4_Hi_Lookup), \
+		(\pointer_to_table), \
+		Dma_Local_Reference(_self,LogicSbox4_Indirect_Exec) \
+	) \
+	/* Step 3: Implement the Dma_LogicSbox4 chain */ \
+	Dma_LogicSbox4(Dma_Local_Name(_self,LogicSbox4_Indirect_Exec), \
+		(_dst), \
+		(_src1), \
+		(_src2), \
+		DMA_INVALID_ADDR, \
+		(_lli) \
+	)
+
 /// \brief Bitwise AND (Lower Nibble)
 ///
 /// C model:
@@ -515,6 +685,193 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 
     LUT_MAKE_512(Lut_Carry_Generator, 0u)
 };
+
+//-----------------------------------------------------------------------------------------
+// Addition and carry generation
+//-----------------------------------------------------------------------------------------
+
+//
+// Adds two bytes read from memory operands "src1" and "src2", then stores the result in dst.
+//
+// C model:
+//   void Dma_Add8(uint8_t *dst, const uint8_t *src1, const uint8_t *src2)
+//   {
+//     *dst = (*src1 + *src2) & 0xFF;
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Temporary for processing
+//
+#define Dma_Add8(_self,_dst,_src1,_src2,_lli) \
+	/* Step 1: Load source byte from src1 and patch it into the source address for loading the temporary LUT */ \
+	Dma_Declare_Local_Descriptor(_self, Add8_LoadTempLut) \
+	Dma_PatchSrcLo8(_self, \
+		Dma_Local_Reference(_self, Add8_LoadTempLut), \
+		(_src1), \
+		Dma_Local_Reference(_self, Add8_LoadTempLut) \
+	) \
+	/* Step 2: Load the temporary LUT with with the identity LUT (offset by src1 memory operand) */ \
+	Dma_Declare_Local_Descriptor(_self, Add8_LookupSum) \
+	Dma_ByteCopy(Dma_Local_Name(_self, Add8_LoadTempLut), \
+		&Lut_Temporary[0u], \
+		&Lut_Identity[0u], \
+		0x100u, \
+		Dma_Local_Reference(_self, Add8_LookupSum) \
+	) \
+	/* Step 3: Lookup the sum using the temporary LUT (indexed by src2 memory operand) */ \
+	Dma_Sbox8(Dma_Local_Name(_self, Add8_LookupSum), (_dst), (_src2), &Lut_Temporary[0u], (_lli))
+
+//
+// Adds the 8-bit immediate "imm8" to the byte read from memory operand "src1" and stores the
+// result in "dst".
+//
+// C model:
+//   void Dma_Add8Imm(uint8_t *dst, const uint8_t *src1, const uint8_t imm8)
+//   {
+//     *dst = (*src1 + imm8) & 0xFF;
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Temporary for processing
+//
+#define Dma_Add8Imm(_self,_dst,_src1,_imm8,_lli) \
+	/* Step 1: Load the temporary LUT with with the identity LUT offset by imm8 operand */ \
+	Dma_Declare_Local_Descriptor(_self, Add8Imm_LookupSum) \
+	Dma_ByteCopy(_self, \
+		&Lut_Temporary[0u], \
+		&Lut_Identity[(_imm8) & 0xFFu], \
+		0x100u, \
+		Dma_Local_Reference(_self, Add8Imm_LookupSum) \
+	) \
+	/* Step 2: Lookup the sum using the temporary LUT (indexed by src2 memory operand) */ \
+	Dma_Sbox8(Dma_Local_Name(_self, Add8Imm_LookupSum), \
+	    (_dst), \
+		(_src1), \
+		&Lut_Temporary[0u], \
+		(_lli) \
+	)
+
+//
+// Subtracts the 8-bit immediate "imm8" from the byte read from memory operand "src1" and stores the
+// result in "dst".
+//
+// C model:
+//   void Dma_Sub8Imm(uint8_t *dst, const uint8_t *src1, const uint8_t imm8)
+//   {
+//     *dst = (*src1 + (0x100 - imm8)) & 0xFF;
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Temporary for processing
+//
+#define Dma_Sub8Imm(_self,_dst,_src1,_imm8,_lli) \
+	/* Implemented as Add8Imm using using the upper half of the identity LUT as starting point. */ \
+	Dma_Add8Imm(_self, (_dst), (_src1), (0x100u - (_imm8)), (_lli))
+
+//
+// Adds the bytes read from two 8-bit memory operands "src1" and "src2" and stores the
+// carry of the addition in "dst".
+//
+//
+// C model:
+//   void Dma_CarryFromAdd8(uint8_t *dst, const uint8_t *src1, const uint8_t *src2)
+//   {
+//     *dst = ((*src1 + *src2) >> 8) & 0x01;
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Temporary for processing
+//
+#define Dma_CarryFromAdd8(_self,_dst,_src1,_src2,_lli) \
+	/* Step 1: Patch the source address of the of the carry LUT copy operation */ \
+	Dma_Declare_Local_Descriptor(_self, CarryFromAdd8_LoadTempLut) \
+	Dma_PatchSrcLo8(_self, \
+		Dma_Local_Reference(_self, CarryFromAdd8_LoadTempLut), \
+		(_src1), \
+		Dma_Local_Reference(_self, CarryFromAdd8_LoadTempLut) \
+	) \
+	/* Step 2: Load the temporary LUT with with the carry LUT offset by imm8 operand */ \
+	Dma_Declare_Local_Descriptor(_self, CarryFromAdd8_LookupCarry) \
+	Dma_ByteCopy(Dma_Local_Name(self, CarryFromAdd8_LoadTempLut), \
+	    &Lut_Temporary[0u], \
+		&Lut_Carry[0u], \
+		0x100u, \
+		Dma_Local_Reference(_self, CarryFromAdd8_LookupCarry) \
+	) \
+	/* Step 3: Lookup the carry using the temporary LUT (indexed by src2 memory operand) */ \
+	Dma_Sbox8(Dma_Local_Name(_self, CarryFromAdd8_LookupCarry), \
+		(_dst), \
+		(\src2), \
+		&Lut_Temporary[0u], \
+		(_lli) \
+	)
+
+//
+// Adds the 8-bit immediate "imm8" to the byte read from memory operand "src1" and stores
+// the carry of the addition in "dst".
+//
+// C model:
+//   void Dma_CarryFromAdd8Imm(uint8_t *dst, const uint8_t *src1, const uint8_t imm8)
+//   {
+//     *dst = ((*src1 + imm8) >> 8) & 0x01;
+//   }
+//
+// Constraints:
+//   This operation uses Lut_Temporary for processing
+//
+#define Dma_CarryFromAdd8Imm(_self,_dst,_src1,_imm8,_lli) \
+	/* Step 1: Load the temporary LUT with with the carry LUT offset by imm8 operand */ \
+	Dma_Declare_Local_Descriptor(_self, CarryFromAdd8Imm_LookupCarry) \
+	Dma_ByteCopy(_self, \
+		&Lut_Temporary[0u], \
+		&Lut_Carry[(_imm8) & 0xFFu], \
+		0x100u, \
+		Dma_Local_Reference(_self,CarryFromAdd8Imm_LookupCarry) \
+	) \
+	/* Step 2: Lookup the carry using the temporary LUT (indexed by src2 memory operand) */ \
+	Dma_Sbox8(Dma_Local_Name(_self, CarryFromAdd8Imm_LookupCarry), \
+	    (_dst), \
+		(_src1), \
+		&Lut_Temporary[0u], \
+		(_lli) \
+	)
+
+//-----------------------------------------------------------------------------------------
+//
+// Arithmetic helpers for the CPU
+//
+//-----------------------------------------------------------------------------------------
+
+//
+// Add 8-bit immediate imm8 to 16-bit value (little endian) at memory operand src1 and store the result in dst1
+//
+// This operation uses Lut_Temporary and Cpu_Scratchpad for processing
+//
+#define Cpu_Add16Imm(_self,_dst,_src1,_imm8,_lli) \
+	/* Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the */ \
+	/*   immediate of the upper part of the addition */ \
+	Dma_Declare_Local_Descriptor(_self, Add16Imm_AddLo8) \
+	Dma_CarryFromAdd8Imm(_self, \
+		&gCpu.Scratchpad[0u], \
+		(_src1), \
+		(_imm8), \
+		Dma_Local_Reference(_self, Add16Imm_AddLo8) \
+	) \
+	/* Step 2: Perform the 8-bit addition in the lower byte */ \
+	Dma_Declare_Local_Descriptor(_self, Add16Imm_AddHi8) \
+	Dma_Add8Imm(Dma_Local_Name(_self, Add16Imm_AddLo8), \
+		(Dma_PtrToAddr(_dst)  + 0u), \
+		(Dma_PtrToAddr(_src1) + 0u), \
+		(_imm8), \
+		Dma_Local_Reference(_self, Add16Imm_AddHi8) \
+	) \
+	/* Step 3: Perform the 8-bit addition in the upper byte (immediate is patched with the carry lookup value) */ \
+	Dma_Add8(Dma_Local_Name(_self, Add16Imm_AddHi8), \
+		(Dma_PtrToAddr(_dst)  + 1u), \
+		(Dma_PtrToAddr(_src1) + 1u), \
+	 	&gCpu.Scratchpad[0u], \
+		(_lli) \
+	)
 
 //-----------------------------------------------------------------------------------------
 //
@@ -681,9 +1038,7 @@ Dma_PatchSrc(Cpu_Fetch_1, &Cpu_Fetch_2, &gCpu.PC, &Cpu_Fetch_2)
 Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gCpu.CurrentOPC), &Cpu_Fetch_3)
 
 // FE.3: Generate lower 16 bit of next program counter
-
-// FIXME: Implement Cpu_AddImm16
-// Cpu_Add16Imm Cpu_NextPC, Cpu_PC, 4, .LCpu_Fetch.4
+Cpu_Add16Imm(Cpu_Fetch_3, &gCpu.NextPC, &gCpu.PC, 4u, &Cpu_Fetch_4)
 
 // FE.4: Copy upper 16 bit of program counter then link to decode stage
 Dma_ByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
@@ -705,8 +1060,7 @@ Dma_Declare_Descriptor(Cpu_Decode_8)
 // DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
 //  Major opcode is in CurrentOPC.Bytes[31:24]
 //
-// FIXME: Implement Dma_TableSwitch64
-Dma_TableSwitch64(Cpu_Decode_1, &Cpu_Decode_2.dst, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
+Dma_TableSwitch64(Cpu_Decode_1, &Cpu_Decode_8.lli, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
 
 // DE.2: Clear the current A. B and Z operand values
 Dma_ByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
@@ -776,84 +1130,71 @@ Dma_ByteCopy(Cpu_Writeback_PC, &gCpu.PC, &gCpu.NextPC, 4u, &Cpu_Fetch_1)
 //
 //-----------------------------------------------------------------------------------------
 
-#if NOT_YET_PORTED
-	/**********************************************************************************************
-	 *
-	 * DMACU CPU Opcodes (Execute Stage)
-	 *
-	 **********************************************************************************************/
+#define Cpu_Opcode_Begin(name)
+#define Cpu_Opcode_End(name)
 
-	// Start of an opcode implementation
-	.macro Cpu_Opcode_Begin name
-	.pushsection ".data.Cpu_Op\name", "aw", "progbits"
-	.p2align 2
-Cpu_Op\name:
-	.endm
+//
+// NOP       - No Operation
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x00 | (0)  | (0)  | (0)  |
+// +------+------+------+------+
+//
+// The NOP instruction is implemented as a dummy copy in the CPU scratchpad followed by a link
+// to the PC writeback stage (No separate DMA descriptors needed).
+//
+Cpu_Opcode_Begin(Nop)
+	Dma_ByteCopy(Cpu_OpNop_1, &gCpu.Scratchpad[0u], &gCpu.Scratchpad[0u], 1u, &Cpu_Writeback_PC)
+Cpu_Opcode_Begin(Nop)
 
-	// End of an opcode implementation
-	.macro Cpu_Opcode_End name
-	.type Cpu_Op\name, "object"
-	.size Cpu_Op\name, . - Cpu_Op\name
-	.popsection
-	.endm
+//
+// MOV rZ, #imm8 - Move to register from 8-bit immediate
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x01 | rZ   | (0)  | imm8 |
+// +------+------+------+------+
+//
+// Copy from CurrentOPC.Bytes[7:0] to CurrentZ, then link to one register writeback.
+//
+Cpu_Opcode_Begin(MovImm)
+	Dma_ByteCopy(Cpu_OpMovImm_1, &gCpu.Operands.Z, &gCpu.CurrentOPC.Bytes[0u], 1u, &Cpu_Writeback_OneReg)
+Cpu_Opcode_End(MovImm)
 
-	/*
-	 * NOP       - No Operation
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x00 | (0)  | (0)  | (0)  |
-	 * +------+------+------+------+
-	 *
-	 * The NOP instruction is implemented as direct link from the decoder's dispatch table to the
-	 * PC writeback stage (No separate DMA descriptors needed).
-	*/
-	.set Cpu_OpNop, .LCpu_Writeback.PC
-
-	/*
-	 * MOV rZ, #imm8 - Move to register from 8-bit immediate
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x01 | rZ   | (0)  | imm8 |
-	 * +------+------+------+------+
-	*/
-	// Copy from CurrentOPC.Bytes[7:0] to CurrentZ, then link to one register writeback
-Cpu_Opcode_Begin MovImm
-	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 1, .LCpu_Writeback.OneReg
-Cpu_Opcode_End MovImm
-
-	/*
-	 * MOV rZ+1:rZ, #imm16 - Move to register pair from 16-bit immediate
-	 *
-	 *  31  24     16             0
-	 * +------+------+-------------+
-	 * | 0x02 | rZ   |       imm16 |
-	 * +------+------+-------------+
-	*/
-Cpu_Opcode_Begin Mov2Imm
+//
+// MOV rZ+1:rZ, #imm16 - Move to register pair from 16-bit immediate
+//
+//  31  24     16             0
+// +------+------+-------------+
+// | 0x02 | rZ   |       imm16 |
+// +------+------+-------------+
+//
+Cpu_Opcode_Begin(Mov2Imm)
 	// Copy from CurrentOPC.Bytes[15:0] to CurrentZ, then link to one register writeback
-	Dma_ByteCopy Cpu_CurrentZ, (Cpu_CurrentOPC + 0), 2, .LCpu_Writeback.TwoRegs
-Cpu_Opcode_End Mov2Imm
+	Dma_ByteCopy(Cpu_OpMov2Imm_1, &gCpu.Operands.Z, &gCpu.CurrentOPC.Bytes[0u], 2u, &Cpu_Writeback_TwoRegs)
+Cpu_Opcode_End(Mov2Imm)
 
-	/*
-	 * MOV2 rZ+1:rZ, rB:rA - Move from register pair to register pair
-	 * MOV  rZ, rA         - (Pseudo-Instruction) Move from register to register (if rB=rZ+1)
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x03 |  rZ  | rB   |  rA  |
-	 * +------+------+------+------+
-	*/
-Cpu_Opcode_Begin Mov2Reg
+//
+// MOV2 rZ+1:rZ, rB:rA - Move from register pair to register pair
+// MOV  rZ, rA         - (Pseudo-Instruction) Move from register to register (if rB=rZ+1)
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x03 |  rZ  | rB   |  rA  |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(Mov2Reg)
+	Dma_Declare_Descriptor(Cpu_OpMov2Reg_2)
+
 	// Copy from CurrentA to CurrentZ{7:0]
-	Dma_ByteCopy (Cpu_CurrentZ + 0), Cpu_CurrentA, 1, Cpu_OpMov2Reg.WriteSecondReg
+	Dma_ByteCopy(Cpu_OpMov2Reg_1, (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), &gCpu.Operands.A, 1u, &Cpu_OpMov2Reg_2)
 
 	// Copy from CurrentB to CurrentZ[15:8]
-Cpu_OpMov2Reg.WriteSecondReg:
-	Dma_ByteCopy (Cpu_CurrentZ + 1), Cpu_CurrentB, 1, .LCpu_Writeback.TwoRegs
-Cpu_Opcode_End Mov2Reg
+	Dma_ByteCopy(Cpu_OpMov2Reg_2, (Dma_PtrToAddr(&gCpu.Operands.Z) + 1u), &gCpu.Operands.B, 1u, &Cpu_Writeback_TwoRegs)
+Cpu_Opcode_End(Mov2Reg)
 
+#if IMPLEMENTED
 	/*
 	 * ADD rZ, rB, #imm8               - Add register and 8-bit immediate
 	 *
