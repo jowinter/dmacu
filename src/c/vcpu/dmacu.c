@@ -1854,14 +1854,14 @@ Cpu_Opcode_Begin(LoadByte)
 
 	// Step 1: Patch in the lower 16 bits of the source address
 	Dma_FixedPatchSrcLo16(Cpu_OpLoadByte_1,
-		(Dma_PtrToAddr(&Cpu_OpLoadByte_3.src) + 0u),
+		&Cpu_OpLoadByte_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpLoadByte_2
 	)
 
 	// Step 2: Patch in the upper 16 bits of the source address
 	Dma_FixedPatchSrcHi16(Cpu_OpLoadByte_2,
-		(Dma_PtrToAddr(&Cpu_OpLoadByte_3.src) + 2u),
+		&Cpu_OpLoadByte_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpLoadByte_3
 	)
@@ -1889,14 +1889,14 @@ Cpu_Opcode_Begin(LoadHalf)
 
 	// Step 1: Patch in the lower 16 bits of the source address
 	Dma_FixedPatchSrcLo16(Cpu_OpLoadHalf_1,
-		(Dma_PtrToAddr(&Cpu_OpLoadHalf_3.src) + 0u),
+		&Cpu_OpLoadHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpLoadHalf_2
 	)
 
 	// Step 2: Patch in the upper 16 bits of the source address
 	Dma_FixedPatchSrcHi16(Cpu_OpLoadHalf_2,
-		(Dma_PtrToAddr(&Cpu_OpLoadHalf_3.src) + 2u),
+		&Cpu_OpLoadHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpLoadHalf_3
 	)
@@ -1926,14 +1926,14 @@ Cpu_Opcode_Begin(LoadWord)
 
 	// Step 1: Patch in the lower 16 bits of the source address
 	Dma_FixedPatchSrcLo16(Cpu_OpLoadWord_1,
-		(Dma_PtrToAddr(&Cpu_OpLoadWord_3.src) + 0u),
+		&Cpu_OpLoadWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpLoadWord_2
 	)
 
 	// Step 2: Patch in the upper 16 bits of the source address
 	Dma_FixedPatchSrcHi16(Cpu_OpLoadWord_2,
-		(Dma_PtrToAddr(&Cpu_OpLoadWord_3.src) + 2u),
+		&Cpu_OpLoadWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpLoadWord_3
 	)
@@ -1963,14 +1963,14 @@ Cpu_Opcode_Begin(StoreByte)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
 	Dma_FixedPatchSrcLo16(Cpu_OpStoreByte_1,
-		(Dma_PtrToAddr(&Cpu_OpStoreByte_3.dst) + 0u),
+		&Cpu_OpStoreByte_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
 	Dma_FixedPatchSrcHi16(Cpu_OpStoreByte_2,
-		(Dma_PtrToAddr(&Cpu_OpStoreByte_3.dst) + 2u),
+		&Cpu_OpStoreByte_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
 	)
@@ -1998,14 +1998,14 @@ Cpu_Opcode_Begin(StoreHalf)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
 	Dma_FixedPatchSrcLo16(Cpu_OpStoreHalf_1,
-		(Dma_PtrToAddr(&Cpu_OpStoreHalf_3.dst) + 0u),
+		&Cpu_OpStoreHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
 	Dma_FixedPatchSrcHi16(Cpu_OpStoreHalf_2,
-		(Dma_PtrToAddr(&Cpu_OpStoreHalf_3.dst) + 2u),
+		&Cpu_OpStoreHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
 	)
@@ -2035,14 +2035,14 @@ Cpu_Opcode_Begin(StoreWord)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
 	DMACU_READONLY Dma_PatchSrcLo16(Cpu_OpStoreWord_1,
-		(Dma_PtrToAddr(&Cpu_OpStoreWord_3.dst) + 0u),
+		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
 	DMACU_READONLY Dma_PatchSrcHi16(Cpu_OpStoreWord_2,
-		(Dma_PtrToAddr(&Cpu_OpStoreWord_3.dst) + 2u),
+		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
 	)
