@@ -24,8 +24,8 @@
 ///
 /// Patches field @p _field of the DMA descriptor at @p _desc with @p _size bytes
 /// from @p _src. Then links to descriptor @p _lli
-#define Dma_PatchField(_self,_dst,_field,_off,_src,_size,_lli) \
-    Dma_ByteCopy(_self, \
+#define Dma_PatchField_Core(_qual,_self,_dst,_field,_off,_src,_size,_lli) \
+    _qual Dma_ByteCopy(_self, \
         (Dma_PtrToAddr(_dst) + Dma_OffsetOf(Dma_Descriptor_t, _field) + ((uint32_t) (_off))), \
         (_src),  \
         (_size), \
@@ -41,40 +41,70 @@
 /// Patches bits [7:0] of the source address of the DMA descriptor at "dst" with the byte
 /// found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchSrcLo8_Core(_qual,_self,_dst,_src,_lli) \
+	Dma_PatchField_Core(_qual, _self, (_dst), src, 0u, (_src), 1u, (_lli))
+
 #define Dma_PatchSrcLo8(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), src, 0u, (_src), 1u, (_lli))
+	Dma_PatchSrcLo8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchSrcLo8(_self,_dst,_src,_lli) \
+    Dma_PatchSrcLo8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patch bits [15:8] of a DMA descriptor's source address.
 ///
 /// Patches bits [15:8] of the source address of the DMA descriptor at "dst" with the byte
 /// found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchSrcHi8_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), src, 1u, (_src), 1u, (_lli))
+
 #define Dma_PatchSrcHi8(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), src, 1u, (_src), 1u, (_lli))
+	Dma_PatchSrcHi8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchSrcHi8(_self,_dst,_src,_lli) \
+    Dma_PatchSrcHi8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patch bits [15:0] of a DMA descriptor's source address.
 ///
 /// Patches bits [15:0] of the source address of the DMA descriptor at "dst" with the
 /// half-word found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchSrcLo16_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), src, 0u, (_src), 2u, (_lli))
+
 #define Dma_PatchSrcLo16(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self,(_dst), src, 0u, (_src), 2u, (_lli))
+	Dma_PatchSrcLo16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchSrcLo16(_self,_dst,_src,_lli) \
+    Dma_PatchSrcLo16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patch bits [31:16] of a DMA descriptor's source address.
 ///
 /// Patches bits [31:16] of the source address of the DMA descriptor at "dst" with the
 /// half-word found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchSrcHi16_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), src, 2u, (_src), 2u, (_lli))
+
 #define Dma_PatchSrcHi16(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), src, 2u, (_src), 2u, (_lli))
+	Dma_PatchSrcHi16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchSrcHi16(_self,_dst,_src,_lli) \
+    Dma_PatchSrcHi16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patches a DMA descriptor's source address.
 ///
 /// Patches the whole destination address of the DMA descriptor at "dst" with the word
 /// found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchSrc_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), src, 0u, (_src), 4u, (_lli))
+
 #define Dma_PatchSrc(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), src, 0u, (_src), 4u, (_lli))
+	Dma_PatchSrc_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchSrc(_self,_dst,_src,_lli) \
+    Dma_PatchSrc_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 //-------------------------------------------------------------------------------------------------
 // Descriptor destination address patch operations
@@ -85,41 +115,70 @@
 /// Patches bits [7:0] of the destination address of DMA descriptor at "dst" with the byte
 /// found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchDstLo8_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), dst, 0u, (_src), 1u, (_lli))
+
 #define Dma_PatchDstLo8(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), dst, 0u, (_src), 1u, (_lli))
+	Dma_PatchDstLo8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchDstLo8(_self,_dst,_src,_lli) \
+    Dma_PatchDstLo8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patches bits[15:8] of a DMA descriptors destination address.
 ///
 /// Patches bits [15:8] of the destination address of DMA descriptor at "dst" with the byte
 /// found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchDstHi8_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), dst, 1u, (_src), 1u, (_lli))
+
 #define Dma_PatchDstHi8(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), dst, 1u, (_src), 1u, (_lli))
+	Dma_PatchDstHi8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchDstHi8(_self,_dst,_src,_lli) \
+    Dma_PatchDstHi8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patches bits[15:0] of a DMA descriptor's destination address.
 ///
 /// Patches bits [15:0] of the destinatoin address of the DMA descriptor at "dst" with the
 /// half-word found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchDstLo16_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), dst, 0u, (_src), 2u, (_lli))
+
 #define Dma_PatchDstLo16(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), dst, 0u, (_src), 2u, (_lli))
+	Dma_PatchDstLo16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchDstLo16(_self,_dst,_src,_lli) \
+    Dma_PatchDstLo16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patches bits[31:16] of a DMA descriptor's destination address.
 ///
 /// Patches bits [31:16] of the destinatoin address of the DMA descriptor at "dst" with the
 /// half-word found at "src". Then links to the next descriptor at "lli".
 ///
+#define Dma_PatchDstHi16_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), dst, 2u, (_src), 2u, (_lli))
+
 #define Dma_PatchDstHi16(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), dst, 2u, (_src), 2u, (_lli))
+	Dma_PatchDstHi16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchDstHi16(_self,_dst,_src,_lli) \
+    Dma_PatchDstHi16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 /// \brief Patches the destination address of a DMA descriptor.
 ///
 /// Patches the entire destination address of the DMA descriptor at "dst" with the word
 /// found at "src". Then links to the next descriptor at "lli".
 ///
-#define Dma_PatchDst(_self,_dst,_src,_lli) \
-    Dma_PatchField(_self, (_dst), dst, 0u, (_src), 4u, (_lli))
+#define Dma_PatchDst_Core(_qual,_self,_dst,_src,_lli) \
+    Dma_PatchField_Core(_qual, _self, (_dst), dst, 0u, (_src), 4u, (_lli))
 
+#define Dma_PatchDst(_self,_dst,_src,_lli) \
+	Dma_PatchDst_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchDst(_self,_dst,_src,_lli) \
+    Dma_PatchDst_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 //-------------------------------------------------------------------------------------------------
 // Descriptor destination address patch operations
 //
@@ -129,9 +188,14 @@
 /// Patches the entire link address (lli) of the DMA descriptor at "dst" with the word
 /// found at "src". Then links to the next descriptor at "lli".
 ///
-#define Dma_PatchLink(_self,_dst,_src,_lli) \
-	Dma_PatchField(_self, (_dst), lli, 0u, (_src), 4u, (_lli))
+#define Dma_PatchLink_Core(_qual, _self,_dst,_src,_lli) \
+	Dma_PatchField_Core(_qual, _self, (_dst), lli, 0u, (_src), 4u, (_lli))
 
+#define Dma_PatchLink(_self,_dst,_src,_lli) \
+	Dma_PatchLink_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
+
+#define Dma_FixedPatchLink(_self,_dst,_src,_lli) \
+    Dma_PatchLink_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
 //-------------------------------------------------------------------------------------------------
 // Lookup-Tables (common helpers and support macros)
@@ -1095,7 +1159,7 @@ void Dmacu_Run(const uint32_t *initial_pc)
 
 Dma_Declare_Descriptor(Cpu_Fetch_2)
 Dma_Declare_Descriptor(Cpu_Fetch_3)
-Dma_Declare_Descriptor(Cpu_Fetch_4)
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_Fetch_4)
 
 // FE.1: Setup source address for instruction fetch
 Dma_PatchSrc(Cpu_Fetch_1, &Cpu_Fetch_2, &gCpu.PC, &Cpu_Fetch_2)
@@ -1107,7 +1171,7 @@ Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gC
 Cpu_Add16Imm(Cpu_Fetch_3, &gCpu.NextPC, &gCpu.PC, 4u, &Cpu_Fetch_4)
 
 // FE.4: Copy upper 16 bit of program counter then link to decode stage
-Dma_ByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
+Dma_FixedByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
 
 //-----------------------------------------------------------------------------------------
 //
@@ -1115,7 +1179,7 @@ Dma_ByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.
 //
 //-----------------------------------------------------------------------------------------
 
-Dma_Declare_Descriptor(Cpu_Decode_2)
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_2)
 Dma_Declare_Descriptor(Cpu_Decode_3)
 Dma_Declare_Descriptor(Cpu_Decode_4)
 Dma_Declare_Descriptor(Cpu_Decode_5)
@@ -1129,7 +1193,7 @@ Dma_Declare_Descriptor(Cpu_Decode_8)
 Dma_FixedTableSwitch64(Cpu_Decode_1, &Cpu_Decode_8.lli, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
 
 // DE.2: Clear the current A. B and Z operand values
-Dma_ByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
+Dma_FixedByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
 
 // DE.3: Prepare loading the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
 Dma_PatchSrcLo8(Cpu_Decode_3, &Cpu_Decode_4, &gCpu.CurrentOPC.Bytes[0u], &Cpu_Decode_4)
