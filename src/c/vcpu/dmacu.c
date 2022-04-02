@@ -1146,8 +1146,8 @@ DMACU_READONLY Dma_Declare_Descriptor(Cpu_Reset_2)
 // RST.1: Capture the program base address (=initial PC)
 Dma_FixedByteCopy(Cpu_Reset_1, &gCpu.ProgramBase, &gCpu.PC, sizeof(uint32_t),   &Cpu_Reset_2)
 
-// RST.2: Clear the register file
-Dma_FixedByteFill(Cpu_Reset_2, &gCpu.RegFile[0], Dmacu_PtrToByteLiteral(0x00u), sizeof(gCpu.RegFile), &Cpu_Fetch_1)
+// RST.2: Clear registers r0-r223 (r224-r255 are provided by the environment)
+Dma_FixedByteFill(Cpu_Reset_2, &gCpu.RegFile[0], Dmacu_PtrToByteLiteral(0x00u), sizeof(gCpu.RegFile) - 32u, &Cpu_Fetch_1)
 
 //-----------------------------------------------------------------------------------------
 void Dmacu_Run(const uint32_t *initial_pc)
@@ -1962,14 +1962,14 @@ Cpu_Opcode_Begin(StoreByte)
 	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpStoreByte_3)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
-	Dma_FixedPatchSrcLo16(Cpu_OpStoreByte_1,
+	Dma_FixedPatchDstLo16(Cpu_OpStoreByte_1,
 		&Cpu_OpStoreByte_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
-	Dma_FixedPatchSrcHi16(Cpu_OpStoreByte_2,
+	Dma_FixedPatchDstHi16(Cpu_OpStoreByte_2,
 		&Cpu_OpStoreByte_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
@@ -1997,14 +1997,14 @@ Cpu_Opcode_Begin(StoreHalf)
 	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpStoreHalf_3)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
-	Dma_FixedPatchSrcLo16(Cpu_OpStoreHalf_1,
+	Dma_FixedPatchDstLo16(Cpu_OpStoreHalf_1,
 		&Cpu_OpStoreHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
-	Dma_FixedPatchSrcHi16(Cpu_OpStoreHalf_2,
+	Dma_FixedPatchDstHi16(Cpu_OpStoreHalf_2,
 		&Cpu_OpStoreHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
@@ -2034,14 +2034,14 @@ Cpu_Opcode_Begin(StoreWord)
 	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpStoreWord_3)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
-	DMACU_READONLY Dma_PatchSrcLo16(Cpu_OpStoreWord_1,
+	DMACU_READONLY Dma_PatchDstLo16(Cpu_OpStoreWord_1,
 		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
-	DMACU_READONLY Dma_PatchSrcHi16(Cpu_OpStoreWord_2,
+	DMACU_READONLY Dma_PatchDstHi16(Cpu_OpStoreWord_2,
 		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
