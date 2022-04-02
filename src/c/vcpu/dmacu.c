@@ -1768,14 +1768,14 @@ Cpu_Opcode_Begin(LoadByte)
 
 	// Step 1: Patch in the lower 16 bits of the source address
 	Dma_PatchSrcLo16(Cpu_OpLoadByte_1,
-		(Dma_PtrToAddr(&Cpu_OpLoadByte_2.src) + 0u),
+		(Dma_PtrToAddr(&Cpu_OpLoadByte_3.src) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpLoadByte_2
 	)
 
 	// Step 2: Patch in the upper 16 bits of the source address
 	Dma_PatchSrcHi16(Cpu_OpLoadByte_2,
-		(Dma_PtrToAddr(&Cpu_OpLoadByte_2.src) + 2u),
+		(Dma_PtrToAddr(&Cpu_OpLoadByte_3.src) + 2u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpLoadByte_3
 	)
@@ -1803,14 +1803,14 @@ Cpu_Opcode_Begin(LoadHalf)
 
 	// Step 1: Patch in the lower 16 bits of the source address
 	Dma_PatchSrcLo16(Cpu_OpLoadHalf_1,
-		(Dma_PtrToAddr(&Cpu_OpLoadHalf_2.src) + 0u),
+		(Dma_PtrToAddr(&Cpu_OpLoadHalf_3.src) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpLoadHalf_2
 	)
 
 	// Step 2: Patch in the upper 16 bits of the source address
 	Dma_PatchSrcHi16(Cpu_OpLoadHalf_2,
-		(Dma_PtrToAddr(&Cpu_OpLoadHalf_2.src) + 2u),
+		(Dma_PtrToAddr(&Cpu_OpLoadHalf_3.src) + 2u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpLoadHalf_3
 	)
@@ -1840,14 +1840,14 @@ Cpu_Opcode_Begin(LoadWord)
 
 	// Step 1: Patch in the lower 16 bits of the source address
 	Dma_PatchSrcLo16(Cpu_OpLoadWord_1,
-		(Dma_PtrToAddr(&Cpu_OpLoadWord_2.src) + 0u),
+		(Dma_PtrToAddr(&Cpu_OpLoadWord_3.src) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpLoadWord_2
 	)
 
 	// Step 2: Patch in the upper 16 bits of the source address
 	Dma_PatchSrcHi16(Cpu_OpLoadWord_2,
-		(Dma_PtrToAddr(&Cpu_OpLoadWord_2.src) + 2u),
+		(Dma_PtrToAddr(&Cpu_OpLoadWord_3.src) + 2u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpLoadWord_3
 	)
@@ -1863,73 +1863,146 @@ Cpu_Opcode_Begin(LoadWord)
 	)
 Cpu_Opcode_End(LoadWord)
 
-#if 0
-	/*
-	 * STB rZ, [rB+1:rB:rA+1:rA]        - Store byte indirect
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x1A |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin StoreByte
-	Dma_PatchDstLo16 (Cpu_OpStoreByte.Store), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_OpStoreByte.AdrHi
-Cpu_OpStoreByte.AdrHi:
-	Dma_PatchDstHi16 (Cpu_OpStoreByte.Store), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Cpu_OpStoreByte.Store
-Cpu_OpStoreByte.Store:
-	Dma_ByteCopy     0, (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 1, .LCpu_Writeback.PC
-Cpu_Opcode_End StoreByte
+//
+// STB rZ, [rB+1:rB:rA+1:rA]        - Store byte indirect
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x1A |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(StoreByte)
+	Dma_Declare_Descriptor(Cpu_OpStoreByte_2)
+	Dma_Declare_Descriptor(Cpu_OpStoreByte_3)
 
-	/*
-	 * STH rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Store half-word indirect
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x1C |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin StoreHalf
-	Dma_PatchDstLo16 (Cpu_OpStoreHalf.Store), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_OpStoreHalf.AdrHi
-Cpu_OpStoreHalf.AdrHi:
-	Dma_PatchDstHi16 (Cpu_OpStoreHalf.Store), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Cpu_OpStoreHalf.Store
-Cpu_OpStoreHalf.Store:
-	Dma_ByteCopy     0, (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 2, .LCpu_Writeback.PC
-Cpu_Opcode_End StoreHalf
+	// Step 1: Patch in the lower 16 bits of the destination address
+	Dma_PatchSrcLo16(Cpu_OpStoreByte_1,
+		(Dma_PtrToAddr(&Cpu_OpStoreByte_3.dst) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
+		&Cpu_OpStoreByte_2
+	)
 
-	/*
-	 * STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Store word indirect
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x1E |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin StoreWord
-	Dma_PatchDstLo16 (Cpu_OpStoreWord.Store), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_OpStoreWord.AdrHi
-Cpu_OpStoreWord.AdrHi:
-	Dma_PatchDstHi16 (Cpu_OpStoreWord.Store), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Cpu_OpStoreWord.Store
-Cpu_OpStoreWord.Store:
-	Dma_ByteCopy     0, (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 4, .LCpu_Writeback.PC
-Cpu_Opcode_End StoreWord
+	// Step 2: Patch in the lower 16 bits of the destination address
+	Dma_PatchSrcHi16(Cpu_OpStoreByte_2,
+		(Dma_PtrToAddr(&Cpu_OpStoreByte_3.dst) + 2u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Cpu_OpStoreByte_3
+	)
 
-#endif
+	// Step 3: Perform the store operation (byte)
+	Dma_ByteCopy(Cpu_OpStoreByte_3,
+	    0,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		1u,
+		&Cpu_Writeback_PC
+	)
+Cpu_Opcode_End(StoreByte)
 
-	/*
-	 * UND #imm24 - Undefined Instruction
-	 *
-	 *  31     24     16      8      0
-	 * +---------+------+------+------+
-	 * | 0x1F(*) | (0)  | (0)  | (0)  |
-	 * +---------+------+------+------+
-	 *
-	 * (*) Canonical encoding of the undefined instruction
-	 *
-	 * The UND instruction (or any other undefined instruction encoding) writes the special
-	 * value 0xDEADC0DE to the Cpu_NextPC descriptor and terminates further DMA processing
-	 * (by linking to the NULL descriptor). The instruction itself (and its 24-bit immediate
-	 * operand) are retained in the Cpu_CurrentOPC register and can be used for debugging
-	 * purposes (from the host system).
-	 */
+//
+// STH rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Store half-word indirect
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x1C |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(StoreHalf)
+	Dma_Declare_Descriptor(Cpu_OpStoreHalf_2)
+	Dma_Declare_Descriptor(Cpu_OpStoreHalf_3)
+
+	// Step 1: Patch in the lower 16 bits of the destination address
+	Dma_PatchSrcLo16(Cpu_OpStoreHalf_1,
+		(Dma_PtrToAddr(&Cpu_OpStoreHalf_3.dst) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
+		&Cpu_OpStoreByte_2
+	)
+
+	// Step 2: Patch in the lower 16 bits of the destination address
+	Dma_PatchSrcHi16(Cpu_OpStoreHalf_2,
+		(Dma_PtrToAddr(&Cpu_OpStoreHalf_3.dst) + 2u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Cpu_OpStoreByte_3
+	)
+
+	// Step 3: Perform the store operation (byte)
+	//
+	// FIXME: Use a 16-bit DMA access (instead of two 8-bit DMA accesses)
+	Dma_ByteCopy(Cpu_OpStoreHalf_3,
+	    DMA_INVALID_ADDR,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		2u,
+		&Cpu_Writeback_PC
+	)
+Cpu_Opcode_End(StoreHalf)
+
+//
+// STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Store word indirect
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x1E |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(StoreWord)
+	Dma_Declare_Descriptor(Cpu_OpStoreWord_2)
+	Dma_Declare_Descriptor(Cpu_OpStoreWord_3)
+
+	// Step 1: Patch in the lower 16 bits of the destination address
+	Dma_PatchSrcLo16(Cpu_OpStoreWord_1,
+		(Dma_PtrToAddr(&Cpu_OpStoreWord_3.dst) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
+		&Cpu_OpStoreByte_2
+	)
+
+	// Step 2: Patch in the lower 16 bits of the destination address
+	Dma_PatchSrcHi16(Cpu_OpStoreWord_2,
+		(Dma_PtrToAddr(&Cpu_OpStoreWord_3.dst) + 2u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Cpu_OpStoreByte_3
+	)
+
+	// Step 3: Perform the store operation (byte)
+	//
+	// FIXME: Use a 32-bit DMA access (instead of four 8-bit DMA accesses)
+	Dma_ByteCopy(Cpu_OpStoreWord_3,
+	    DMA_INVALID_ADDR,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		4u,
+		&Cpu_Writeback_PC
+	)
+Cpu_Opcode_End(StoreWord)
+
+//
+// UND #imm24 - Undefined Instruction
+//
+//  31     24     16      8      0
+// +---------+------+------+------+
+// | 0x1F(*) | (0)  | (0)  | (0)  |
+// +---------+------+------+------+
+//
+// (*) Canonical encoding of the undefined instruction
+//
+// The UND instruction (or any other undefined instruction encoding) writes the special
+// value 0xDEADC0DE to the gCpu.NextPC descriptor and terminates further DMA processing
+// (by linking to the NULL descriptor). The instruction itself (and its 24-bit immediate
+// operand) are retained in the Cpu_CurrentOPC register and can be used for debugging
+// purposes (from the host system).
+//
+// Idea: Mapping of ARM semihosting calls:
+// -> Trap the UND instruction on the host CPU (DMA transfer done, gCpu.NextPC shows
+//    the magic value 0xDEADC0DE).
+//
+// -> Map rZ to the ARM semicall number
+// -> Use rB:rA as 16-bit offset (like LIT32) to locate the semicall parameter block
+// -> Let BKPT #0xAB (on Cortex-M) do its thing
+//
+// Idea: Trivial (custom) semihosting (portable):
+// -> Wrap the host CPU's "DMA" transfer in semihosting interpreter loop
+// -> Host starts the DMA transfer
+// -> DMA transfer finishes (as result of the UND)
+// -> Host interprets gCpu.Operanfs.{A,B,Z} and handles semihosting call
+// -> Host sets gCpu.NextPC (typ. to gCpu.PC) and restarts DMA from Cpu_Fetch_1 stage.
+//
 Cpu_Opcode_Begin(Undef)
 	DMACU_PRIVATE const uint32_t Cpu_OpUndef_Lit_DEADC0DE = 0xDEADC0DEu;
 
