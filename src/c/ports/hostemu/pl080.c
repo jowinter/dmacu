@@ -19,7 +19,7 @@
 #include "pl080.h"
 
 /// \brief Enable logging of DMA transactions (for debugging)
-#define LOG_DMA (1)
+#define LOG_DMA (0)
 
 //----------------------------------------------------------------------
 bool PL080_Channel_Process(PL080_Channel_t *ch)
@@ -39,10 +39,10 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 			// Update control (we will consume the size)
 			ch->control = ctrl & ~PL080_CH_CTRL_SIZE_MASK;
 
-			const uint8_t *const src = (const uint8_t *) ch->src_addr;
-			uint8_t *const dst = (uint8_t *) ch->dst_addr;
+			volatile const uint8_t *const src = (const uint8_t *) ch->src_addr;
+			volatile uint8_t *const dst = (uint8_t *) ch->dst_addr;
 
-#if LOG_DMA
+#if (LOG_DMA >= 2)
 			printf ("dma[copy] %p -> %p size:%u data:[", (void *) src, (void *) dst, size);
 #endif
 			// Process any data to copy
@@ -52,7 +52,7 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 
 			for (uint32_t i = 0u; i < size; ++i)
 			{
-#if LOG_DMA
+#if (LOG_DMA >= 3)
 				printf(" %02X", (unsigned) (src[src_off] & 0xFFu));
 #endif
 				dst[dst_off] = src[src_off];
@@ -69,14 +69,14 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 					dst_off += 1u;
 				}
 			}
-#if LOG_DMA
+#if (LOG_DMA >= 2)
 			printf(" ]\n");
 #endif
 			// No more data to transfer (try to fetch next channel descriptor)
 			if (ch->lli != 0u)
 			{
 				const uint32_t *const next = (const uint32_t *) ch->lli;
-#if LOG_DMA
+#if (LOG_DMA >= 1)
 				printf ("dma[link] %p -> src:%08X dst:%08X lli:%08X control:%08X\n",
 					(void*) ch->lli, (unsigned) next[0u], (unsigned) next[1u],
 					(unsigned) next[2u], (unsigned) next[3u]);
