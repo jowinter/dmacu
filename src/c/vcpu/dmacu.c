@@ -1670,106 +1670,200 @@ Cpu_Opcode_Begin(Shl4)
 	)
 Cpu_Opcode_End(Shl4)
 
+//
+// JAL rZ+1:rZ, #imm16             - Jump and Link
+//
+//  31  24     16      8      0
+// +------+------+-------------+
+// | 0x17 |  rZ  | imm16       |
+// +------+------+-------------+
+//
+Cpu_Opcode_Begin(Jal)
+	Dma_Declare_Descriptor(Cpu_OpJal_2)
+	Dma_Declare_Descriptor(Cpu_OpJal_3)
 
-#if NOT_IMPLMENETED
-	/*
-	 * JAL rZ+1:rZ, #imm16             - Jump and Link
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+-------------+
-	 * | 0x17 |  rZ  | imm16       |
-	 * +------+------+-------------+
-	 */
-Cpu_Opcode_Begin Jal
 	// Copy the lower half of next PC value to rZ, then link to JmpReg16
 	// (Clipping is consistent with program counter increment)
-Cpu_OpJal.1:
-	Dma_ByteCopy (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.NextPC) + 0u), 2, Cpu_OpJal.2
+	Dma_ByteCopy(Cpu_OpJal_1,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		(Dma_PtrToAddr(&gCpu.NextPC) + 0u),
+		2u,
+		&Cpu_OpJal_2
+	)
 
-Cpu_OpJal.2:
 	// WB.FOUR.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+2]:...:Regfile[rZ]
-	Dma_PatchDstLo8 Cpu_OpJal.3, (Cpu_CurrentOPC + 2), Cpu_OpJal.3
+	Dma_PatchDstLo8(Cpu_OpJal_2,
+		&Cpu_OpJal_3,
+		&gCpu.CurrentOPC.Bytes[2u],
+		&Cpu_OpJal_3
+	)
 
-Cpu_OpJal.3:
 	// WB.FOUR.2: Do copy from CurrentZ[15:0] to Regfile[rZ+2]:...:Regfile[rZ]
-	Dma_ByteCopy Cpu_Regfile, Cpu_CurrentZ, 2, Cpu_OpJmpImm16
-Cpu_Opcode_End Jal
+	Dma_ByteCopy(Cpu_OpJal_3,
+		&gCpu.RegFile[0u],
+		&gCpu.Operands.Z,
+		2u,
+		&Cpu_OpJmpImm16_1
+	)
+Cpu_Opcode_End(Jal)
 
-	/*
-	 * LIT32 rZ+3:rZ+2:rZ+1:rZ, (off16) - Load a 32-bit literal
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+-------------+
-	 * | 0x17 |  rZ  | (off16)     |
-	 * +------+------+-------------+
-	 */
-Cpu_Opcode_Begin Lit32
+//
+// LIT32 rZ+3:rZ+2:rZ+1:rZ, (off16) - Load a 32-bit literal
+//
+//  31  24     16      8      0
+// +------+------+-------------+
+// | 0x17 |  rZ  | (off16)     |
+// +------+------+-------------+
+//
+Cpu_Opcode_Begin(Lit32)
+	Dma_Declare_Descriptor(Cpu_OpLit32_2)
+	Dma_Declare_Descriptor(Cpu_OpLit32_3)
+	Dma_Declare_Descriptor(Cpu_OpLit32_Commit)
+
 	// Load the program base into the source address of the copy operation at step 4
-Cpu_OpLit32.1:
-	Dma_ByteCopy (Cpu_OpLit32.Commit + 0), (Dma_PtrToAddr(&gCpu.ProgramBase) + 0u), 4, Cpu_OpLit32.2
+	Dma_ByteCopy(Cpu_OpLit32_1,
+		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 0u),
+		(Dma_PtrToAddr(&gCpu.ProgramBase) + 0u),
+		4u,
+		&Cpu_OpLit32_2
+	)
 
-	// Add lower 8-bit to rZ
-Cpu_OpLit32.2:
-	Cpu_Add8To16 (Cpu_OpLit32.Commit + 0), (Dma_PtrToAddr(&gCpu.ProgramBase) + 0u), &gCpu.CurrentOPC.Bytes[0u], Cpu_OpLit32.3
+	// Add lower 8-bit to the source address
+	Cpu_Add8to16(Cpu_OpLit32_2,
+		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 0u),
+		(Dma_PtrToAddr(&gCpu.ProgramBase) + 0u),
+		&gCpu.CurrentOPC.Bytes[0u],
+		&Cpu_OpLit32_3
+	)
 
-	// Add upper 8-bit to program counter
-Cpu_OpLit32.3:
-	Cpu_Add8To16 (Cpu_OpLit32.Commit + 1), (Cpu_OpLit32.Commit + 1), &gCpu.CurrentOPC.Bytes[1u], Cpu_OpLit32.Commit
+	// Add upper 8-bit to the source address
+	Cpu_Add8to16(Cpu_OpLit32_3,
+		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 1u),
+		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 1u),
+		&gCpu.CurrentOPC.Bytes[1u],
+		&Cpu_OpLit32_Commit
+	)
 
 	// Ignore clipping for LIT32 offsets (this allows is to load literals that sit slightly outside of the
 	// 64k code segment)
-Cpu_OpLit32.Commit:
-	Dma_ByteCopy (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (0xBADC0DE0), 4, .LCpu_Writeback.FourRegs
-Cpu_Opcode_End   Lit32
+	Dma_ByteCopy(Cpu_OpLit32_Commit,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		DMA_INVALID_ADDR,
+		4u,
+		&Cpu_Writeback_FourRegs
+	)
+Cpu_Opcode_End(Lit32)
 
-	/*
-	 * LDB rZ, [rB+1:rB:rA+1:rA]        - Load byte indirect
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x19 |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin LoadByte
-	Dma_PatchSrcLo16 (Cpu_OpLoadByte.Load), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_OpLoadByte.AdrHi
-Cpu_OpLoadByte.AdrHi:
-	Dma_PatchSrcHi16 (Cpu_OpLoadByte.Load), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Cpu_OpLoadByte.Load
-Cpu_OpLoadByte.Load:
-	Dma_ByteCopy     (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 0, 1, &Cpu_Writeback_OneReg
-Cpu_Opcode_End LoadByte
+//
+// LDB rZ, [rB+1:rB:rA+1:rA]        - Load byte indirect
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x19 |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(LoadByte)
+	Dma_Declare_Descriptor(Cpu_OpLoadByte_2)
+	Dma_Declare_Descriptor(Cpu_OpLoadByte_3)
 
-	/*
-	 * LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Load half-word indirect
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x1B |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin LoadHalf
-	Dma_PatchSrcLo16 (Cpu_OpLoadHalf.Load), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_OpLoadHalf.AdrHi
-Cpu_OpLoadHalf.AdrHi:
-	Dma_PatchSrcHi16 (Cpu_OpLoadHalf.Load), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Cpu_OpLoadHalf.Load
-Cpu_OpLoadHalf.Load:
-	Dma_ByteCopy     (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 0, 2, .LCpu_Writeback.TwoRegs
-Cpu_Opcode_End LoadHalf
+	// Step 1: Patch in the lower 16 bits of the source address
+	Dma_PatchSrcLo16(Cpu_OpLoadByte_1,
+		(Dma_PtrToAddr(&Cpu_OpLoadByte_2.src) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
+		&Cpu_OpLoadByte_2
+	)
 
-	/*
-	 * LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Load word indirect
-	 *
-	 *  31  24     16      8      0
-	 * +------+------+------+------+
-	 * | 0x1D |  rZ  | rB   | rA   |
-	 * +------+------+------+------+
-	 */
-Cpu_Opcode_Begin LoadWord
-	Dma_PatchSrcLo16 (Cpu_OpLoadWord.Load), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_OpLoadWord.AdrHi
-Cpu_OpLoadWord.AdrHi:
-	Dma_PatchSrcHi16 (Cpu_OpLoadWord.Load), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), Cpu_OpLoadWord.Load
-Cpu_OpLoadWord.Load:
-	Dma_ByteCopy     (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 0, 4, .LCpu_Writeback.FourRegs
-Cpu_Opcode_End LoadWord
+	// Step 2: Patch in the upper 16 bits of the source address
+	Dma_PatchSrcHi16(Cpu_OpLoadByte_2,
+		(Dma_PtrToAddr(&Cpu_OpLoadByte_2.src) + 2u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Cpu_OpLoadByte_3
+	)
 
+	// Step 3: Perform the load operation (byte)
+	Dma_ByteCopy(Cpu_OpLoadByte_3,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		DMA_INVALID_ADDR,
+		1u,
+		&Cpu_Writeback_OneReg
+	)
+Cpu_Opcode_End(LoadByte)
+
+//
+// LDH rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Load half-word indirect
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x1B |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(LoadHalf)
+	Dma_Declare_Descriptor(Cpu_OpLoadHalf_2)
+	Dma_Declare_Descriptor(Cpu_OpLoadHalf_3)
+
+	// Step 1: Patch in the lower 16 bits of the source address
+	Dma_PatchSrcLo16(Cpu_OpLoadHalf_1,
+		(Dma_PtrToAddr(&Cpu_OpLoadHalf_2.src) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
+		&Cpu_OpLoadHalf_2
+	)
+
+	// Step 2: Patch in the upper 16 bits of the source address
+	Dma_PatchSrcHi16(Cpu_OpLoadHalf_2,
+		(Dma_PtrToAddr(&Cpu_OpLoadHalf_2.src) + 2u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Cpu_OpLoadHalf_3
+	)
+
+	// Step 3: Perform the load operation (half-word)
+	//
+	// FIXME: Use a 16-bit DMA access (instead of two 8-bit DMA accesses)
+	Dma_ByteCopy(Cpu_OpLoadHalf_3,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		DMA_INVALID_ADDR,
+		2u,
+		&Cpu_Writeback_TwoRegs
+	)
+Cpu_Opcode_End(LoadHalf)
+
+//
+// LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]    - Load word indirect
+//
+//  31  24     16      8      0
+// +------+------+------+------+
+// | 0x1D |  rZ  | rB   | rA   |
+// +------+------+------+------+
+//
+Cpu_Opcode_Begin(LoadWord)
+	Dma_Declare_Descriptor(Cpu_OpLoadWord_2)
+	Dma_Declare_Descriptor(Cpu_OpLoadWord_3)
+
+	// Step 1: Patch in the lower 16 bits of the source address
+	Dma_PatchSrcLo16(Cpu_OpLoadWord_1,
+		(Dma_PtrToAddr(&Cpu_OpLoadWord_2.src) + 0u),
+		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
+		&Cpu_OpLoadWord_2
+	)
+
+	// Step 2: Patch in the upper 16 bits of the source address
+	Dma_PatchSrcHi16(Cpu_OpLoadWord_2,
+		(Dma_PtrToAddr(&Cpu_OpLoadWord_2.src) + 2u),
+		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
+		&Cpu_OpLoadWord_3
+	)
+
+	// Step 3: Perform the load operation (half-word)
+	//
+	// FIXME: Use a 32-bit DMA access (instead of four 8-bit DMA accesses)
+	Dma_ByteCopy(Cpu_OpLoadWord_3,
+		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
+		DMA_INVALID_ADDR,
+		4u,
+		&Cpu_Writeback_FourRegs
+	)
+Cpu_Opcode_End(LoadWord)
+
+#if 0
 	/*
 	 * STB rZ, [rB+1:rB:rA+1:rA]        - Store byte indirect
 	 *
@@ -1818,6 +1912,8 @@ Cpu_OpStoreWord.Store:
 	Dma_ByteCopy     0, (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), 4, .LCpu_Writeback.PC
 Cpu_Opcode_End StoreWord
 
+#endif
+
 	/*
 	 * UND #imm24 - Undefined Instruction
 	 *
@@ -1834,34 +1930,14 @@ Cpu_Opcode_End StoreWord
 	 * operand) are retained in the Cpu_CurrentOPC register and can be used for debugging
 	 * purposes (from the host system).
 	 */
-Cpu_Opcode_Begin Undef
+Cpu_Opcode_Begin(Undef)
+	DMACU_PRIVATE const uint32_t Cpu_OpUndef_Lit_DEADC0DE = 0xDEADC0DEu;
+
 	// Copy the 0xDEADC0DE value to Cpu_NextPC, then halt via LLI=0
-	Dma_ByteCopy Cpu_NextPC, Cpu_OpUndef.Lit_DEADCODE, 4, 0x00000000
-
-Cpu_OpUndef.Lit_DEADCODE:
-	.long 0xDEADC0DE
-Cpu_Opcode_End Undef
-
-	/*
-	 * Export the CPU entrypoint
-	 *
-	 * CPU processing starts at the RST.1 stage.
-	 */
-	.global Dma_UCode_CPU
-	.set Dma_UCode_CPU, .LCpu_Reset.1
-
-	/**********************************************************************************************
-	 *
-	 * DMACU CPU Pipelines (Execute Stage)
-	 *
-	**********************************************************************************************/
-#if DMACU_USE_CPU_EXECUTE_LOGIC
-	//
-	// Use Cpu_Execute_Logic sub-pipline instead of the macro
-	//
-	.p2align 2
-Cpu_Execute_Logic:
-	// Step 1: Execute the active logic sbox given by Cpu_ActiveLogicSbox
-	Dma_LogicSbox4_Indirect (Dma_PtrToAddr(&gCpu.Operands.Z) + 0u), (Dma_PtrToAddr(&gCpu.Operands.B) + 0u), (Dma_PtrToAddr(&gCpu.Operands.A) + 0u), Cpu_ActiveLogicSbox, &Cpu_Writeback_OneReg
-#endif
-#endif
+	Dma_ByteCopy(Cpu_OpUndef_1,
+		&gCpu.NextPC,
+		&Cpu_OpUndef_Lit_DEADC0DE,
+		4u,
+		DMA_INVALID_ADDR
+	)
+Cpu_Opcode_End(Undef)
