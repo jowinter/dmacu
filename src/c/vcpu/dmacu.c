@@ -165,16 +165,25 @@
 ///   The lookup table at "sbox" must be aligned to a 256-byte boundary for proper
 ///   operation.
 ///
-#define Dma_Sbox8(_self,_dst,_src,_sbox,_lli) \
-    Dma_Declare_Local_Descriptor(_self, Sbox8_Lookup) \
+#define Dma_Sbox8_Core(_qual,_self,_dst,_src,_sbox,_lli) \
+	_qual           Dma_Declare_Descriptor(_self) \
+    DMACU_READWRITE Dma_Declare_Local_Descriptor(_self, Sbox8_Lookup) \
     /* Step 1: Load the source byte from src and substitute it into the sbox's source address */ \
-    Dma_PatchSrcLo8(_self, \
+    _qual Dma_PatchSrcLo8(_self, \
         Dma_Local_Reference(_self, Sbox8_Lookup), \
         (_src), \
         Dma_Local_Reference(_self, Sbox8_Lookup)  \
     ) \
     /* Step 2: Read the byte from the (patched) sbox location and store to dst */ \
-    Dma_ByteCopy(Dma_Local_Name(_self, Sbox8_Lookup), (_dst), (_sbox), 1u, (_lli))
+    DMACU_READWRITE Dma_ByteCopy(Dma_Local_Name(_self, Sbox8_Lookup), (_dst), (_sbox), 1u, (_lli))
+
+// Patchable version of Dma_Sbox8
+#define Dma_Sbox8(_self,_dst,_src,_sbox,_lli) \
+	Dma_Sbox8_Core(DMACU_READWRITE, _self, _dst, _src, _sbox, _lli)
+
+// Fixed (non-patchable) version of Dma_Sbox8
+#define Dma_FixedSbox8(_self,_dst,_src,_sbox,_lli) \
+	Dma_Sbox8_Core(DMACU_READONLY, _self, _dst, _src, _sbox, _lli)
 
 /// \brief Patch the lookup table of address of an 8-bit SBOX
 ///
@@ -211,9 +220,13 @@
 //  should be in range 0..63 (the construction of Lut_TableSwitch64 ensures that byte values >=64
 //  are reduced modulo 64 for purpose of lookup address generation).
 //
-#define Dma_TableSwitch64(_self,_dst,_src,_table,_lli) \
+// The _qual parameter specifies the extra qualifiers (const, non-const).
+//
+
+#define Dma_TableSwitch64_Core(_qual,_self,_dst,_src,_table,_lli) \
 	/* Step 1: Patch the byte-copy operation that performs the fetch from the table lookup */ \
 	/*         We actually perform an SBOX lookup into the multiply-by-4 LUT for the patch */ \
+	Dma_Declare_Descriptor(_self) \
 	Dma_Declare_Local_Descriptor(_self, TableSwitch_DoLookup) \
 	Dma_Sbox8(_self, \
 		&Dma_Local_Reference(_self, TableSwitch_DoLookup)->src, \
@@ -224,6 +237,9 @@
 	/* Step 2: Read a 4-byte value from the table. */ \
 	Dma_ByteCopy(Dma_Local_Name(_self, TableSwitch_DoLookup), (_dst), (_table), 4u, (_lli))
 
+// Non-patchable table switch
+#define Dma_FixedTableSwitch64(_self,_dst,_src,_table,_lli) \
+	Dma_TableSwitch64_Core(DMACU_READONLY, _self, _dst, _src, _table,_lli)
 
 // Temporary LUTs
 DMACU_ALIGNED(256u) DMACU_PRIVATE uint8_t Lut_Temporary[256u];
@@ -243,7 +259,7 @@ DMACU_PRIVATE uint8_t Lut_Scratchpad[16u];
 ///   }
 /// \endcode
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_BitNot[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_BitNot[256u] =
 {
 #define Lut_BitNot_Generator(_a) ((uint8_t) (~(_a) & 0xFFu))
 
@@ -261,7 +277,7 @@ DMACU_PRIVATE const uint8_t Lut_BitNot[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_Neg[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Neg[256u] =
 {
 #define Lut_Neg_Generator(_a) ((uint8_t) (-(_a) & 0xFFu))
 
@@ -279,7 +295,7 @@ DMACU_PRIVATE const uint8_t Lut_Neg[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_RotateRight[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_RotateRight[256u] =
 {
 #define Lut_RotateRight_Generator(_a) \
     ((uint8_t) ((((_a) >> 1u) & 0x7Fu) | (((_a) & 0x1u) << 7u)))
@@ -298,7 +314,7 @@ DMACU_PRIVATE const uint8_t Lut_RotateRight[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_RotateLeft[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_RotateLeft[256u] =
 {
 #define Lut_RotateLeft_Generator(_a) \
     ((uint8_t) ((((_a) & 0x7Fu) << 1u) | (((_a) >> 7u) & 0x1u)))
@@ -317,7 +333,7 @@ DMACU_PRIVATE const uint8_t Lut_RotateLeft[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_Lo4[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Lo4[256u] =
 {
 #define Lut_Lo4_Generator(_a) \
     ((uint8_t) ((_a) & 0x0Fu))
@@ -336,7 +352,7 @@ DMACU_PRIVATE const uint8_t Lut_Lo4[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_Hi4[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Hi4[256u] =
 {
 #define Lut_Hi4_Generator(_a) \
     ((uint8_t) (((_a) >> 4u) & 0x0Fu))
@@ -355,7 +371,7 @@ DMACU_PRIVATE const uint8_t Lut_Hi4[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_Mul4[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Mul4[256u] =
 {
 #define Lut_Mul4_Generator(_a) \
     ((uint8_t) (((_a) & 0x3Fu) << 2u))
@@ -374,7 +390,7 @@ DMACU_PRIVATE const uint8_t Lut_Mul4[256u] =
 /// \endcode
 ///
 DMACU_ALIGNED(256u)
-DMACU_PRIVATE const uint8_t Lut_Mul16[256u] =
+DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Mul16[256u] =
 {
 #define Lut_Mul16_Generator(_a) \
     ((uint8_t) (((_a) & 0x0Fu) << 4u))
@@ -1110,7 +1126,7 @@ Dma_Declare_Descriptor(Cpu_Decode_8)
 // DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
 //  Major opcode is in CurrentOPC.Bytes[31:24]
 //
-Dma_TableSwitch64(Cpu_Decode_1, &Cpu_Decode_8.lli, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
+Dma_FixedTableSwitch64(Cpu_Decode_1, &Cpu_Decode_8.lli, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
 
 // DE.2: Clear the current A. B and Z operand values
 Dma_ByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)

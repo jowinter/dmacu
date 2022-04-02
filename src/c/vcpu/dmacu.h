@@ -24,11 +24,24 @@
 #endif
 
 #ifndef DMACU_PRIVATE
-# define DMACU_PRIVATE // static
+# define DMACU_PRIVATE
 #endif
 
 #ifndef DMACU_PRIVATE_DECL
 # define DMACU_PRIVATE_DECL extern
+#endif
+
+
+#ifndef DMACU_CONST
+# define DMACU_CONST const
+#endif
+
+#ifndef DMACU_READONLY
+# define DMACU_READONLY const
+#endif
+
+#ifndef DMACU_READWRITE
+# define DMACU_READWRITE
 #endif
 
 /// \brief 32-bit pointer type for the virtual CPU emulator.
@@ -66,7 +79,6 @@ typedef struct Dma_Descriptor
 ///
 #define DMA_INVALID_ADDR Dma_PtrToAddr(NULL)
 
-
 //-------------------------------------------------------------------------------------------------
 // Basic DMA descriptors (PL080)
 //
@@ -96,26 +108,42 @@ typedef struct Dma_Descriptor
 ///
 /// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
 ///
-#define Dma_ByteCopy(_self,_dst,_src,_size,_lli) \
-    Dma_Define_Descriptor(_self, \
+#define Dma_ByteCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
+    _qual Dma_Define_Descriptor(_self, \
         .src  = (Dma_UIntPtr_t) (_src), \
         .dst  = (Dma_UIntPtr_t) (_dst), \
         .lli  = (Dma_UIntPtr_t) (_lli), \
         .ctrl = UINT32_C(0x0C000000) + (uint32_t) (_size) \
     )
 
+// Patchable version of Dma_ByteCopy
+#define Dma_ByteCopy(_self,_dst,_src,_size,_lli) \
+    Dma_ByteCopy_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
+
+// Fixed (non-patchable) version of Dma_ByteCopy
+#define Dma_FixedByteCopy(_self,_dst,_src,_size,_lli) \
+    Dma_ByteCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
+
 /// \brief Basic byte-wise DMA fill operation.
 ///
 /// Fills a block of "size" bytes at "dst" with the byte found at "src". Then links to the
 /// next descriptor at "lli".
 ///
-#define Dma_ByteFill(_self,_dst,_src,_size,_lli) \
-    Dma_Define_Descriptor(_self, \
+#define Dma_ByteFill_Core(_qual,_self,_dst,_src,_size,_lli) \
+    _qual Dma_Define_Descriptor(_self, \
         .src  = (Dma_UIntPtr_t) (_src), \
         .dst  = (Dma_UIntPtr_t) (_dst), \
         .lli  = (Dma_UIntPtr_t) (_lli), \
         .ctrl = UINT32_C(0x08000000) + (uint32_t) (_size) \
     )
+
+// Fixed (non-patchable) version of Dma_ByteFill
+#define Dma_ByteFill(_self,_dst,_src,_size,_lli) \
+    Dma_ByteFill_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
+
+// Fixed (non-patchable) version of Dma_ByteFill
+#define Dma_FixedByteFill(_self,_dst,_src,_size,_lli) \
+    Dma_ByteFill_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
 
 //-------------------------------------------------------------------------------------------------
 /// \brief Execution state of the DMACU virtual CPU
