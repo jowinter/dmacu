@@ -49,7 +49,8 @@ OBJECTS        := $(C_SOURCES:%.c=%.o)
 # Build as 32 bit binary (PL080 emulation does currently not work on 64-bit)
 HOST_CC        := clang
 HOST_CPUFLAGS  := -m32
-HOST_CFLAGS    := $(HOST_CPUFLAGS) $(COMMON_CPPFLAGS) -Wall -std=c99 -pedantic -g -O1
+HOST_OPTFLAGS  := -g -O1 -flto
+HOST_CFLAGS    := $(HOST_CPUFLAGS) $(COMMON_CPPFLAGS) -Wall -std=c99 -pedantic $(HOST_OPTFLAGS)
 
 HOST_C_SOURCES := $(COMMON_C_SOURCES)
 HOST_C_SOURCES += ./ports/hostemu/pl080.c
