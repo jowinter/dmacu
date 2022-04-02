@@ -148,6 +148,10 @@ typedef struct Dma_Descriptor
 //-------------------------------------------------------------------------------------------------
 /// \brief Execution state of the DMACU virtual CPU
 ///
+/// \note The DMACU virtual CPU requires the CPU structure to be aligned on an even 256-byte boundary
+///   to ensure correct operation of the register file. (Register file accesses patch the lowest
+///   byte of DMA source/destination addresses)
+///
 typedef struct Dmacu_Cpu
 {
     /// \brief Register file (256 registers)

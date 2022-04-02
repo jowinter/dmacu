@@ -1111,6 +1111,7 @@ DMACU_PRIVATE const Dma_UIntPtr_t Lut_InstructionTable[32u] =
 //-----------------------------------------------------------------------------------------
 
 // Global instance of the CPU execution state
+DMACU_ALIGNED(256)
 DMACU_PRIVATE Dmacu_Cpu_t gCpu;
 
 //-----------------------------------------------------------------------------------------
