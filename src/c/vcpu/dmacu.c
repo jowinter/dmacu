@@ -13,9 +13,6 @@
  */
 #include "dmacu.h"
 
-#pragma clang diagnostic ignored "-Wunused-const-variable"
-#pragma clang diagnostic ignored "-Wunused-variable"
-
 //-------------------------------------------------------------------------------------------------
 // DMA descriptor manipulation helpers
 //
@@ -44,9 +41,6 @@
 #define Dma_PatchSrcLo8_Core(_qual,_self,_dst,_src,_lli) \
 	Dma_PatchField_Core(_qual, _self, (_dst), src, 0u, (_src), 1u, (_lli))
 
-#define Dma_PatchSrcLo8(_self,_dst,_src,_lli) \
-	Dma_PatchSrcLo8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
-
 #define Dma_FixedPatchSrcLo8(_self,_dst,_src,_lli) \
     Dma_PatchSrcLo8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
@@ -57,9 +51,6 @@
 ///
 #define Dma_PatchSrcHi8_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), src, 1u, (_src), 1u, (_lli))
-
-#define Dma_PatchSrcHi8(_self,_dst,_src,_lli) \
-	Dma_PatchSrcHi8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
 
 #define Dma_FixedPatchSrcHi8(_self,_dst,_src,_lli) \
     Dma_PatchSrcHi8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
@@ -72,9 +63,6 @@
 #define Dma_PatchSrcLo16_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), src, 0u, (_src), 2u, (_lli))
 
-#define Dma_PatchSrcLo16(_self,_dst,_src,_lli) \
-	Dma_PatchSrcLo16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
-
 #define Dma_FixedPatchSrcLo16(_self,_dst,_src,_lli) \
     Dma_PatchSrcLo16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
@@ -86,9 +74,6 @@
 #define Dma_PatchSrcHi16_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), src, 2u, (_src), 2u, (_lli))
 
-#define Dma_PatchSrcHi16(_self,_dst,_src,_lli) \
-	Dma_PatchSrcHi16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
-
 #define Dma_FixedPatchSrcHi16(_self,_dst,_src,_lli) \
     Dma_PatchSrcHi16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
@@ -99,9 +84,6 @@
 ///
 #define Dma_PatchSrc_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), src, 0u, (_src), 4u, (_lli))
-
-#define Dma_PatchSrc(_self,_dst,_src,_lli) \
-	Dma_PatchSrc_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
 
 #define Dma_FixedPatchSrc(_self,_dst,_src,_lli) \
     Dma_PatchSrc_Core(DMACU_READONLY, _self, _dst, _src, _lli)
@@ -118,9 +100,6 @@
 #define Dma_PatchDstLo8_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), dst, 0u, (_src), 1u, (_lli))
 
-#define Dma_PatchDstLo8(_self,_dst,_src,_lli) \
-	Dma_PatchDstLo8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
-
 #define Dma_FixedPatchDstLo8(_self,_dst,_src,_lli) \
     Dma_PatchDstLo8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
@@ -131,9 +110,6 @@
 ///
 #define Dma_PatchDstHi8_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), dst, 1u, (_src), 1u, (_lli))
-
-#define Dma_PatchDstHi8(_self,_dst,_src,_lli) \
-	Dma_PatchDstHi8_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
 
 #define Dma_FixedPatchDstHi8(_self,_dst,_src,_lli) \
     Dma_PatchDstHi8_Core(DMACU_READONLY, _self, _dst, _src, _lli)
@@ -146,9 +122,6 @@
 #define Dma_PatchDstLo16_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), dst, 0u, (_src), 2u, (_lli))
 
-#define Dma_PatchDstLo16(_self,_dst,_src,_lli) \
-	Dma_PatchDstLo16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
-
 #define Dma_FixedPatchDstLo16(_self,_dst,_src,_lli) \
     Dma_PatchDstLo16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
 
@@ -159,9 +132,6 @@
 ///
 #define Dma_PatchDstHi16_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), dst, 2u, (_src), 2u, (_lli))
-
-#define Dma_PatchDstHi16(_self,_dst,_src,_lli) \
-	Dma_PatchDstHi16_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
 
 #define Dma_FixedPatchDstHi16(_self,_dst,_src,_lli) \
     Dma_PatchDstHi16_Core(DMACU_READONLY, _self, _dst, _src, _lli)
@@ -174,11 +144,9 @@
 #define Dma_PatchDst_Core(_qual,_self,_dst,_src,_lli) \
     Dma_PatchField_Core(_qual, _self, (_dst), dst, 0u, (_src), 4u, (_lli))
 
-#define Dma_PatchDst(_self,_dst,_src,_lli) \
-	Dma_PatchDst_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
-
 #define Dma_FixedPatchDst(_self,_dst,_src,_lli) \
     Dma_PatchDst_Core(DMACU_READONLY, _self, _dst, _src, _lli)
+
 //-------------------------------------------------------------------------------------------------
 // Descriptor destination address patch operations
 //
@@ -190,9 +158,6 @@
 ///
 #define Dma_PatchLink_Core(_qual, _self,_dst,_src,_lli) \
 	Dma_PatchField_Core(_qual, _self, (_dst), lli, 0u, (_src), 4u, (_lli))
-
-#define Dma_PatchLink(_self,_dst,_src,_lli) \
-	Dma_PatchLink_Core(DMACU_READWRITE, _self, _dst, _src, _lli)
 
 #define Dma_FixedPatchLink(_self,_dst,_src,_lli) \
     Dma_PatchLink_Core(DMACU_READONLY, _self, _dst, _src, _lli)
@@ -239,10 +204,6 @@
     ) \
     /* Step 2: Read the byte from the (patched) sbox location and store to dst */ \
     DMACU_READWRITE Dma_ByteCopy(Dma_Local_Name(_self, Sbox8_Lookup), (_dst), (_sbox), 1u, (_lli))
-
-// Patchable version of Dma_Sbox8
-#define Dma_Sbox8(_self,_dst,_src,_sbox,_lli) \
-	Dma_Sbox8_Core(DMACU_READWRITE, _self, _dst, _src, _sbox, _lli)
 
 // Fixed (non-patchable) version of Dma_Sbox8
 #define Dma_FixedSbox8(_self,_dst,_src,_sbox,_lli) \
@@ -495,15 +456,15 @@ DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Mul16[256u] =
 #define Dma_LogicSbox4_Core(_qual,_self,_dst,_src1,_src2,_table,_lli) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo4_B) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo4_Mul16_B) \
-	      Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo_Combine) \
+	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo_Combine) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Lo_Lookup) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_A) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_B) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi4_Mul16_B) \
-	      Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Combine) \
+	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Combine) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Lookup) \
 	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Hi_Shift) \
-	      Dma_Declare_Local_Descriptor(_self, LogicSbox4_Result) \
+	_qual Dma_Declare_Local_Descriptor(_self, LogicSbox4_Result) \
 	/* Step 1: Extract lower 4 bits of operand A into t0 */ \
 	Dma_Sbox8_Core(_qual, _self, \
 		&Lut_Scratchpad[0u], \
@@ -526,7 +487,7 @@ DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Mul16[256u] =
 		Dma_Local_Reference(_self, LogicSbox4_Lo_Combine) \
 	) \
 	/* Step 4: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT */ \
-	Dma_Add8(Dma_Local_Name(_self, LogicSbox4_Lo_Combine), \
+	Dma_Add8_Core(_qual, Dma_Local_Name(_self, LogicSbox4_Lo_Combine), \
 		 &Lut_Scratchpad[2u], \
 		 &Lut_Scratchpad[1u], \
 		 &Lut_Scratchpad[0u], \
@@ -561,7 +522,7 @@ DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Mul16[256u] =
 		Dma_Local_Reference(_self, LogicSbox4_Hi_Combine) \
 	) \
 	/* Step 9: Add t0 and t1 to get the lookup table index into the 4-bit x 4-bit LUT */ \
-	Dma_Add8(Dma_Local_Name(_self, LogicSbox4_Hi_Combine), \
+	Dma_Add8_Core(_qual, Dma_Local_Name(_self, LogicSbox4_Hi_Combine), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[0u], \
@@ -582,15 +543,12 @@ DMACU_PRIVATE DMACU_READONLY uint8_t Lut_Mul16[256u] =
 		Dma_Local_Reference(_self, LogicSbox4_Result) \
 	) \
 	/* Step 12: Assemble the result, then link to writeback */ \
-	Dma_Add8(Dma_Local_Name(_self, LogicSbox4_Result), \
+	Dma_Add8_Core(_qual, Dma_Local_Name(_self, LogicSbox4_Result), \
 		(_dst), \
 		&Lut_Scratchpad[1u], \
 		&Lut_Scratchpad[2u], \
 		(_lli) \
 	)
-
-#define Dma_LogicSbox4(_self,_dst,_src1,_src2,_table,_lli) \
-	Dma_LogicSbox4_Core(DMACU_READWRITE, _dst, _src1, _src2, _table, _lli)
 
 #define Dma_FixedLogicSbox4(_self,_dst,_src1,_src2,_table,_lli) \
 	Dma_LogicSbox4_Core(DMACU_READONLY, _dst, _src1, _src2, _table, _lli)
@@ -786,16 +744,16 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 // Constraints:
 //   This operation uses Lut_Temporary for processing
 //
-#define Dma_Add8(_self,_dst,_src1,_src2,_lli) \
+#define Dma_Add8_Core(_qual, _self,_dst,_src1,_src2,_lli) \
+	DMACU_READWRITE Dma_Declare_Local_Descriptor(_self, Add8_LoadTempLut) \
+	_qual           Dma_Declare_Local_Descriptor(_self, Add8_LookupSum) \
 	/* Step 1: Load source byte from src1 and patch it into the source address for loading the temporary LUT */ \
-	Dma_Declare_Local_Descriptor(_self, Add8_LoadTempLut) \
-	Dma_PatchSrcLo8(_self, \
+	Dma_PatchSrcLo8_Core(_qual, _self, \
 		Dma_Local_Reference(_self, Add8_LoadTempLut), \
 		(_src1), \
 		Dma_Local_Reference(_self, Add8_LoadTempLut) \
 	) \
 	/* Step 2: Load the temporary LUT with with the identity LUT (offset by src1 memory operand) */ \
-	Dma_Declare_Local_Descriptor(_self, Add8_LookupSum) \
 	Dma_ByteCopy(Dma_Local_Name(_self, Add8_LoadTempLut), \
 		&Lut_Temporary[0u], \
 		&Lut_Identity[0u], \
@@ -803,7 +761,10 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 		Dma_Local_Reference(_self, Add8_LookupSum) \
 	) \
 	/* Step 3: Lookup the sum using the temporary LUT (indexed by src2 memory operand) */ \
-	Dma_Sbox8(Dma_Local_Name(_self, Add8_LookupSum), (_dst), (_src2), &Lut_Temporary[0u], (_lli))
+	Dma_Sbox8_Core(_qual, Dma_Local_Name(_self, Add8_LookupSum), (_dst), (_src2), &Lut_Temporary[0u], (_lli))
+
+#define Dma_FixedAdd8(_self,_dst,_src1,_src2,_lli) \
+	Dma_Add8_Core(DMACU_READONLY, _self,_dst,_src1,_src2,_lli)
 
 //
 // Adds the 8-bit immediate "imm8" to the byte read from memory operand "src1" and stores the
@@ -818,22 +779,25 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 // Constraints:
 //   This operation uses Lut_Temporary for processing
 //
-#define Dma_Add8Imm(_self,_dst,_src1,_imm8,_lli) \
+#define Dma_Add8Imm_Core(_qual,_self,_dst,_src1,_imm8,_lli) \
 	/* Step 1: Load the temporary LUT with with the identity LUT offset by imm8 operand */ \
-	Dma_Declare_Local_Descriptor(_self, Add8Imm_LookupSum) \
-	Dma_ByteCopy(_self, \
+	_qual Dma_Declare_Local_Descriptor(_self, Add8Imm_LookupSum) \
+	Dma_ByteCopy_Core(_qual, _self, \
 		&Lut_Temporary[0u], \
 		&Lut_Identity[(_imm8) & 0xFFu], \
 		0x100u, \
 		Dma_Local_Reference(_self, Add8Imm_LookupSum) \
 	) \
 	/* Step 2: Lookup the sum using the temporary LUT (indexed by src2 memory operand) */ \
-	Dma_Sbox8(Dma_Local_Name(_self, Add8Imm_LookupSum), \
+	Dma_Sbox8_Core(_qual, Dma_Local_Name(_self, Add8Imm_LookupSum), \
 	    (_dst), \
 		(_src1), \
 		&Lut_Temporary[0u], \
 		(_lli) \
 	)
+
+#define Dma_FixedAdd8Imm(_self,_dst,_src1,_imm8,_lli) \
+	 Dma_Add8Imm_Core(DMACU_READONLY, _self,_dst,_src1,_imm8,_lli)
 
 //
 // Subtracts the 8-bit immediate "imm8" from the byte read from memory operand "src1" and stores the
@@ -866,16 +830,16 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 // Constraints:
 //   This operation uses Lut_Temporary for processing
 //
-#define Dma_CarryFromAdd8(_self,_dst,_src1,_src2,_lli) \
+#define Dma_CarryFromAdd8_Core(_qual,_self,_dst,_src1,_src2,_lli) \
+	DMACU_READWRITE Dma_Declare_Local_Descriptor(_self, CarryFromAdd8_LoadTempLut) \
+	_qual           Dma_Declare_Local_Descriptor(_self, CarryFromAdd8_LookupCarry) \
 	/* Step 1: Patch the source address of the of the carry LUT copy operation */ \
-	Dma_Declare_Local_Descriptor(_self, CarryFromAdd8_LoadTempLut) \
-	Dma_PatchSrcLo8(_self, \
+	Dma_PatchSrcLo8_Core(_qual, _self, \
 		Dma_Local_Reference(_self, CarryFromAdd8_LoadTempLut), \
 		(_src1), \
 		Dma_Local_Reference(_self, CarryFromAdd8_LoadTempLut) \
 	) \
 	/* Step 2: Load the temporary LUT with with the carry LUT offset by imm8 operand */ \
-	Dma_Declare_Local_Descriptor(_self, CarryFromAdd8_LookupCarry) \
 	Dma_ByteCopy(Dma_Local_Name(_self, CarryFromAdd8_LoadTempLut), \
 	    &Lut_Temporary[0u], \
 		&Lut_Carry[0u], \
@@ -883,12 +847,15 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 		Dma_Local_Reference(_self, CarryFromAdd8_LookupCarry) \
 	) \
 	/* Step 3: Lookup the carry using the temporary LUT (indexed by src2 memory operand) */ \
-	Dma_Sbox8(Dma_Local_Name(_self, CarryFromAdd8_LookupCarry), \
+	Dma_Sbox8_Core(_qual, Dma_Local_Name(_self, CarryFromAdd8_LookupCarry), \
 		(_dst), \
 		(_src2), \
 		&Lut_Temporary[0u], \
 		(_lli) \
 	)
+
+#define Dma_FixedCarryFromAdd8(_self,_dst,_src1,_src2,_lli) \
+	Dma_CarryFromAdd8_Core(DMACU_READONLY,_self,_dst,_src1,_src2,_lli) \
 
 //
 // Adds the 8-bit immediate "imm8" to the byte read from memory operand "src1" and stores
@@ -903,22 +870,25 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 // Constraints:
 //   This operation uses Lut_Temporary for processing
 //
-#define Dma_CarryFromAdd8Imm(_self,_dst,_src1,_imm8,_lli) \
+#define Dma_CarryFromAdd8Imm_Core(_qual,_self,_dst,_src1,_imm8,_lli) \
+	_qual Dma_Declare_Local_Descriptor(_self, CarryFromAdd8Imm_LookupCarry) \
 	/* Step 1: Load the temporary LUT with with the carry LUT offset by imm8 operand */ \
-	Dma_Declare_Local_Descriptor(_self, CarryFromAdd8Imm_LookupCarry) \
-	Dma_ByteCopy(_self, \
+	Dma_ByteCopy_Core(_qual, _self, \
 		&Lut_Temporary[0u], \
 		&Lut_Carry[(_imm8) & 0xFFu], \
 		0x100u, \
 		Dma_Local_Reference(_self,CarryFromAdd8Imm_LookupCarry) \
 	) \
 	/* Step 2: Lookup the carry using the temporary LUT (indexed by src2 memory operand) */ \
-	Dma_Sbox8(Dma_Local_Name(_self, CarryFromAdd8Imm_LookupCarry), \
+	Dma_Sbox8_Core(_qual, Dma_Local_Name(_self, CarryFromAdd8Imm_LookupCarry), \
 	    (_dst), \
 		(_src1), \
 		&Lut_Temporary[0u], \
 		(_lli) \
 	)
+
+#define Dma_FixedCarryFromAdd8Imm(_self,_dst,_src1,_imm8,_lli) \
+	Dma_CarryFromAdd8Imm_Core(DMACU_READONLY,_self,_dst,_src1,_imm8,_lli)
 
 //-----------------------------------------------------------------------------------------
 //
@@ -931,62 +901,68 @@ DMACU_PRIVATE const uint8_t Lut_Carry[512u] =
 //
 // This operation uses Lut_Temporary and Cpu_Scratchpad for processing
 //
-#define Cpu_Add16Imm(_self,_dst,_src1,_imm8,_lli) \
+#define Cpu_Add16Imm_Core(_qual,_self,_dst,_src1,_imm8,_lli) \
+	_qual Dma_Declare_Local_Descriptor(_self, Add16Imm_AddLo8) \
+	_qual Dma_Declare_Local_Descriptor(_self, Add16Imm_AddHi8) \
 	/* Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the */ \
 	/*   immediate of the upper part of the addition */ \
-	Dma_Declare_Local_Descriptor(_self, Add16Imm_AddLo8) \
-	Dma_CarryFromAdd8Imm(_self, \
+	Dma_CarryFromAdd8Imm_Core(_qual, _self, \
 		&gCpu.Scratchpad[0u], \
 		(_src1), \
 		(_imm8), \
 		Dma_Local_Reference(_self, Add16Imm_AddLo8) \
 	) \
 	/* Step 2: Perform the 8-bit addition in the lower byte */ \
-	Dma_Declare_Local_Descriptor(_self, Add16Imm_AddHi8) \
-	Dma_Add8Imm(Dma_Local_Name(_self, Add16Imm_AddLo8), \
+	Dma_Add8Imm_Core(_qual, Dma_Local_Name(_self, Add16Imm_AddLo8), \
 		(Dma_PtrToAddr(_dst)  + 0u), \
 		(Dma_PtrToAddr(_src1) + 0u), \
 		(_imm8), \
 		Dma_Local_Reference(_self, Add16Imm_AddHi8) \
 	) \
 	/* Step 3: Perform the 8-bit addition in the upper byte (immediate is patched with the carry lookup value) */ \
-	Dma_Add8(Dma_Local_Name(_self, Add16Imm_AddHi8), \
+	Dma_Add8_Core(_qual, Dma_Local_Name(_self, Add16Imm_AddHi8), \
 		(Dma_PtrToAddr(_dst)  + 1u), \
 		(Dma_PtrToAddr(_src1) + 1u), \
 	 	&gCpu.Scratchpad[0u], \
 		(_lli) \
 	)
 
+#define Cpu_FixedAdd16Imm(_self,_dst,_src1,_imm8,_lli) \
+	Cpu_Add16Imm_Core(DMACU_READONLY,_self,_dst,_src1,_imm8,_lli)
+
 //
 // Adds an 8-bit value (in src2) to 16-bit value (little endian) at memory operand src1 and store the result in dst1
 //
 // This operation uses Lut_Temporary and Cpu_Scratchpad for processing
 //
-#define Cpu_Add8to16(_self,_dst,_src1,_src2,_lli) \
-	Dma_Declare_Local_Descriptor(_self, Add8to16_AddLo8) \
-	Dma_Declare_Local_Descriptor(_self, Add8to16_AddHi8) \
+#define Cpu_Add8to16_Core(_qual,_self,_dst,_src1,_src2,_lli) \
+	_qual Dma_Declare_Local_Descriptor(_self, Add8to16_AddLo8) \
+	_qual Dma_Declare_Local_Descriptor(_self, Add8to16_AddHi8) \
 	/* Step 1: Generate the carry for the 8-bit addition in the lower byte and patch the */ \
 	/* immediate of the upper part of the addition */ \
-	Dma_CarryFromAdd8(_self, \
+	Dma_CarryFromAdd8_Core(_qual, _self, \
 		&gCpu.Scratchpad[0u], \
 		(_src1), \
 		(_src2), \
 		Dma_Local_Reference(_self, Add8to16_AddLo8) \
 	) \
 	/* Step 2: Perform the 8-bit addition in the lower byte */ \
-	Dma_Add8(Dma_Local_Name(_self, Add8to16_AddLo8), \
+	Dma_Add8_Core(_qual, Dma_Local_Name(_self, Add8to16_AddLo8), \
 		(Dma_PtrToAddr(_dst)  + 0u), \
 		(Dma_PtrToAddr(_src1) + 0u), \
 		(Dma_PtrToAddr(_src2) + 0u), \
 		Dma_Local_Reference(_self, Add8to16_AddHi8) \
 	) \
 	/* Step 3: Perform the 8-bit addition in the upper byte (immediate is patched with the carry lookup value) */ \
-	Dma_Add8(Dma_Local_Name(_self, Add8to16_AddHi8), \
+	Dma_Add8_Core(_qual, Dma_Local_Name(_self, Add8to16_AddHi8), \
 		(Dma_PtrToAddr(_dst)  + 1u), \
 		(Dma_PtrToAddr(_src1) + 1u), \
 		&gCpu.Scratchpad[0u], \
 		(_lli) \
 	)
+
+#define Cpu_FixedAdd8to16(_self,_dst,_src1,_src2,_lli) \
+	Cpu_Add8to16_Core(DMACU_READONLY,_self,_dst,_src1,_src2,_lli)
 
 //
 // 8-bit arbitrary logic function (AND/OR/XOR)
@@ -1020,10 +996,10 @@ DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpNop_1       )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpMovImm_1    )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpMov2Imm_1   )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpMov2Reg_1   )
-Dma_Declare_Descriptor(Cpu_OpAddImm8_1   )
-Dma_Declare_Descriptor(Cpu_OpAcyImm8_1   )
-Dma_Declare_Descriptor(Cpu_OpAddReg_1    )
-Dma_Declare_Descriptor(Cpu_OpAcyReg_1    )
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpAddImm8_1   )
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpAcyImm8_1   )
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpAddReg_1    )
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpAcyReg_1    )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpImm16_1  )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpReg16_1  )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpBrNeReg_1   )
@@ -1135,19 +1111,23 @@ DMACU_READONLY Dma_Declare_Descriptor(Cpu_Writeback_TwoRegs)
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_Writeback_OneReg)
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_Writeback_PC)
 
+#define Cpu_Stage_Begin(name)
+#define Cpu_Stage_End(name)
+
 //-----------------------------------------------------------------------------------------
 //
 // DMACU CPU Reset
 //
 //-----------------------------------------------------------------------------------------
+Cpu_Stage_Begin(Cpu_Fetch)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Reset_2)
 
-DMACU_READONLY Dma_Declare_Descriptor(Cpu_Reset_2)
+	// RST.1: Capture the program base address (=initial PC)
+	Dma_FixedByteCopy(Cpu_Reset_1, &gCpu.ProgramBase, &gCpu.PC, sizeof(uint32_t),   &Cpu_Reset_2)
 
-// RST.1: Capture the program base address (=initial PC)
-Dma_FixedByteCopy(Cpu_Reset_1, &gCpu.ProgramBase, &gCpu.PC, sizeof(uint32_t),   &Cpu_Reset_2)
-
-// RST.2: Clear registers r0-r223 (r224-r255 are provided by the environment)
-Dma_FixedByteFill(Cpu_Reset_2, &gCpu.RegFile[0], Dmacu_PtrToByteLiteral(0x00u), sizeof(gCpu.RegFile) - 32u, &Cpu_Fetch_1)
+	// RST.2: Clear registers r0-r223 (r224-r255 are provided by the environment)
+	Dma_FixedByteFill(Cpu_Reset_2, &gCpu.RegFile[0], Dmacu_PtrToByteLiteral(0x00u), sizeof(gCpu.RegFile) - 32u, &Cpu_Fetch_1)
+Cpu_Stage_End(Cpu_Fetch)
 
 //-----------------------------------------------------------------------------------------
 const Dma_Descriptor_t* Dmacu_CpuBootDescriptor(void)
@@ -1161,69 +1141,71 @@ const Dma_Descriptor_t* Dmacu_CpuBootDescriptor(void)
 // DMACU CPU Fetch Stage
 //
 //-----------------------------------------------------------------------------------------
+Cpu_Stage_Begin(Cpu_Fetch)
+	Dma_Declare_Descriptor(Cpu_Fetch_2)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Fetch_3)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Fetch_4)
 
-Dma_Declare_Descriptor(Cpu_Fetch_2)
-Dma_Declare_Descriptor(Cpu_Fetch_3)
-DMACU_READONLY Dma_Declare_Descriptor(Cpu_Fetch_4)
+	// FE.1: Setup source address for instruction fetch
+	Dma_FixedPatchSrc(Cpu_Fetch_1, &Cpu_Fetch_2, &gCpu.PC, &Cpu_Fetch_2)
 
-// FE.1: Setup source address for instruction fetch
-Dma_FixedPatchSrc(Cpu_Fetch_1, &Cpu_Fetch_2, &gCpu.PC, &Cpu_Fetch_2)
+	// FE.2: Fetch current instruction into opcode buffer
+	Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gCpu.CurrentOPC), &Cpu_Fetch_3)
 
-// FE.2: Fetch current instruction into opcode buffer
-Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gCpu.CurrentOPC), &Cpu_Fetch_3)
+	// FE.3: Generate lower 16 bit of next program counter
+	Cpu_FixedAdd16Imm(Cpu_Fetch_3, &gCpu.NextPC, &gCpu.PC, 4u, &Cpu_Fetch_4)
 
-// FE.3: Generate lower 16 bit of next program counter
-Cpu_Add16Imm(Cpu_Fetch_3, &gCpu.NextPC, &gCpu.PC, 4u, &Cpu_Fetch_4)
-
-// FE.4: Copy upper 16 bit of program counter then link to decode stage
-Dma_FixedByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
+	// FE.4: Copy upper 16 bit of program counter then link to decode stage
+	Dma_FixedByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
+Cpu_Stage_End(Cpu_Fetch)
 
 //-----------------------------------------------------------------------------------------
 //
 // DMACU CPU Decode Stage
 //
 //-----------------------------------------------------------------------------------------
+Cpu_Stage_Begin(Cpu_Decode)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_2)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_3)
+	Dma_Declare_Descriptor(Cpu_Decode_4)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_5)
+	Dma_Declare_Descriptor(Cpu_Decode_6)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_7)
+	Dma_Declare_Descriptor(Cpu_Decode_8)
 
-DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_2)
-DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_3)
-Dma_Declare_Descriptor(Cpu_Decode_4)
-DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_5)
-Dma_Declare_Descriptor(Cpu_Decode_6)
-DMACU_READONLY Dma_Declare_Descriptor(Cpu_Decode_7)
-Dma_Declare_Descriptor(Cpu_Decode_8)
+	// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
+	//  Major opcode is in CurrentOPC.Bytes[31:24]
+	//
+	Dma_FixedTableSwitch64(Cpu_Decode_1, &Cpu_Decode_8.lli, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
 
-// DE.1: Generate the LLI address to the opcode (via tableswitch on opcode)
-//  Major opcode is in CurrentOPC.Bytes[31:24]
-//
-Dma_FixedTableSwitch64(Cpu_Decode_1, &Cpu_Decode_8.lli, &gCpu.CurrentOPC.Bytes[3u], &Lut_InstructionTable[0u], &Cpu_Decode_2)
+	// DE.2: Clear the current A. B and Z operand values
+	Dma_FixedByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
 
-// DE.2: Clear the current A. B and Z operand values
-Dma_FixedByteFill(Cpu_Decode_2, &gCpu.Operands, Dmacu_PtrToByteLiteral(0x00), sizeof(gCpu.Operands), &Cpu_Decode_3)
+	// DE.3: Prepare loading the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
+	Dma_FixedPatchSrcLo8(Cpu_Decode_3, &Cpu_Decode_4, &gCpu.CurrentOPC.Bytes[0u], &Cpu_Decode_4)
 
-// DE.3: Prepare loading the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
-Dma_FixedPatchSrcLo8(Cpu_Decode_3, &Cpu_Decode_4, &gCpu.CurrentOPC.Bytes[0u], &Cpu_Decode_4)
+	// DE.4: Load the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
+	//
+	// NOTE: We always load rA+1:rA
+	Dma_ByteCopy(Cpu_Decode_4, &gCpu.Operands.A, &gCpu.RegFile[0], 2u, &Cpu_Decode_5)
 
-// DE.4: Load the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
-//
-// NOTE: We always load rA+1:rA
-Dma_ByteCopy(Cpu_Decode_4, &gCpu.Operands.A, &gCpu.RegFile[0], 2u, &Cpu_Decode_5)
+	// DE.5: Prepare loading the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
+	Dma_FixedPatchSrcLo8(Cpu_Decode_5, &Cpu_Decode_6, &gCpu.CurrentOPC.Bytes[1u], &Cpu_Decode_6)
 
-// DE.5: Prepare loading the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
-Dma_FixedPatchSrcLo8(Cpu_Decode_5, &Cpu_Decode_6, &gCpu.CurrentOPC.Bytes[1u], &Cpu_Decode_6)
+	// DE.6: Load the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
+	//
+	// NOTE: We always load rB+1:rB
+	Dma_ByteCopy(Cpu_Decode_6, &gCpu.Operands.B, &gCpu.RegFile[0u], 2u, &Cpu_Decode_7)
 
-// DE.6: Load the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
-//
-// NOTE: We always load rB+1:rB
-Dma_ByteCopy(Cpu_Decode_6, &gCpu.Operands.B, &gCpu.RegFile[0u], 2u, &Cpu_Decode_7)
+	// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rZ)
+	Dma_FixedPatchSrcLo8(Cpu_Decode_7, &Cpu_Decode_8, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Decode_8)
 
-// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rZ)
-Dma_FixedPatchSrcLo8(Cpu_Decode_7, &Cpu_Decode_8, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Decode_8)
-
-// DE.8: Load the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rB)
-//   Then dispatch to the execute stage (LLI patched by .LCpu_Decode.1)
-//
-// NOTE: We always load rZ+3:rZ+2:rZ+1:rZ+0
-Dma_ByteCopy(Cpu_Decode_8, &gCpu.Operands.Z, &gCpu.RegFile[0u], 4u, DMA_INVALID_ADDR)
+	// DE.8: Load the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rB)
+	//   Then dispatch to the execute stage (LLI patched by .LCpu_Decode.1)
+	//
+	// NOTE: We always load rZ+3:rZ+2:rZ+1:rZ+0
+	Dma_ByteCopy(Cpu_Decode_8, &gCpu.Operands.Z, &gCpu.RegFile[0u], 4u, DMA_INVALID_ADDR)
+Cpu_Stage_End(Cpu_Decode)
 
 //-----------------------------------------------------------------------------------------
 //
@@ -1234,31 +1216,32 @@ Dma_ByteCopy(Cpu_Decode_8, &gCpu.Operands.Z, &gCpu.RegFile[0u], 4u, DMA_INVALID_
 //
 //-----------------------------------------------------------------------------------------
 
-Dma_Declare_Descriptor(Cpu_Writeback_FourRegs_Commit)
-Dma_Declare_Descriptor(Cpu_Writeback_TwoRegs_Commit)
-Dma_Declare_Descriptor(Cpu_Writeback_OneReg_Commit)
+Cpu_Stage_Begin(Cpu_Writeback)
+	Dma_Declare_Descriptor(Cpu_Writeback_FourRegs_Commit)
+	Dma_Declare_Descriptor(Cpu_Writeback_TwoRegs_Commit)
+	Dma_Declare_Descriptor(Cpu_Writeback_OneReg_Commit)
 
-// WB.FOUR.1: Setup copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
-Dma_FixedPatchDstLo8(Cpu_Writeback_FourRegs, &Cpu_Writeback_FourRegs_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_FourRegs_Commit)
+	// WB.FOUR.1: Setup copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
+	Dma_FixedPatchDstLo8(Cpu_Writeback_FourRegs, &Cpu_Writeback_FourRegs_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_FourRegs_Commit)
 
-// WB.FOUR.2: Do copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
-Dma_ByteCopy(Cpu_Writeback_FourRegs_Commit, &gCpu.RegFile[0u], &gCpu.Operands.Z, 4u, &Cpu_Writeback_PC)
+	// WB.FOUR.2: Do copy from CurrentZ[31:0] to Regfile[rZ+3]:...:Regfile[rZ]
+	Dma_ByteCopy(Cpu_Writeback_FourRegs_Commit, &gCpu.RegFile[0u], &gCpu.Operands.Z, 4u, &Cpu_Writeback_PC)
 
-// WB.TWO.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
-Dma_FixedPatchDstLo8(Cpu_Writeback_TwoRegs, &Cpu_Writeback_TwoRegs_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_TwoRegs_Commit)
+	// WB.TWO.1: Setup copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
+	Dma_FixedPatchDstLo8(Cpu_Writeback_TwoRegs, &Cpu_Writeback_TwoRegs_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_TwoRegs_Commit)
 
-// WB.TWO.2: Do copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
-Dma_ByteCopy(Cpu_Writeback_TwoRegs_Commit, &gCpu.RegFile[0u], &gCpu.Operands.Z, 2u, &Cpu_Writeback_PC)
+	// WB.TWO.2: Do copy from CurrentZ[15:0] to Regfile[rZ+1]:Regfile[rZ]
+	Dma_ByteCopy(Cpu_Writeback_TwoRegs_Commit, &gCpu.RegFile[0u], &gCpu.Operands.Z, 2u, &Cpu_Writeback_PC)
 
-// WB.ONE.1: Setup copy from CurrentZ[7:0] to Regfile[rZ]
-Dma_FixedPatchDstLo8(Cpu_Writeback_OneReg, &Cpu_Writeback_OneReg_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_OneReg_Commit)
+	// WB.ONE.1: Setup copy from CurrentZ[7:0] to Regfile[rZ]
+	Dma_FixedPatchDstLo8(Cpu_Writeback_OneReg, &Cpu_Writeback_OneReg_Commit, &gCpu.CurrentOPC.Bytes[2u], &Cpu_Writeback_OneReg_Commit)
 
-// WB.ONE.2: Do copy from CurrentZ[7:0] to Regfile[rZ]
-Dma_ByteCopy(Cpu_Writeback_OneReg_Commit, &gCpu.RegFile[0], &gCpu.Operands.Z, 1u, &Cpu_Writeback_PC)
+	// WB.ONE.2: Do copy from CurrentZ[7:0] to Regfile[rZ]
+	Dma_ByteCopy(Cpu_Writeback_OneReg_Commit, &gCpu.RegFile[0], &gCpu.Operands.Z, 1u, &Cpu_Writeback_PC)
 
-// WB.PC: Copy NextPC to PC, link to fetch stage
-Dma_FixedByteCopy(Cpu_Writeback_PC, &gCpu.PC, &gCpu.NextPC, 4u, &Cpu_Fetch_1)
-
+	// WB.PC: Copy NextPC to PC, link to fetch stage
+	Dma_FixedByteCopy(Cpu_Writeback_PC, &gCpu.PC, &gCpu.NextPC, 4u, &Cpu_Fetch_1)
+Cpu_Stage_End(Cpu_Writeback)
 //-----------------------------------------------------------------------------------------
 //
 // DMACU CPU Opcodes (Execute Stage)
@@ -1339,7 +1322,7 @@ Cpu_Opcode_End(Mov2Reg)
 //
 Cpu_Opcode_Begin(AddImm8)
 	// Add the 8-bit immediate (from instruction word [7:0]) to rB, store result in rZ
-	Dma_Add8(Cpu_OpAddImm8_1,
+	Dma_FixedAdd8(Cpu_OpAddImm8_1,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&gCpu.CurrentOPC.Bytes[0u],
@@ -1357,7 +1340,7 @@ Cpu_Opcode_End(AddImm8)
 // `
 Cpu_Opcode_Begin(AcyImm8)
 	// Generate the carry from rB+imm8, store in rZ
-	Dma_CarryFromAdd8(Cpu_OpAcyImm8_1,
+	Dma_FixedCarryFromAdd8(Cpu_OpAcyImm8_1,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&gCpu.CurrentOPC.Bytes[0u],
@@ -1375,7 +1358,7 @@ Cpu_Opcode_End(AcyImm8)
 //
 Cpu_Opcode_Begin(AddReg)
 	// Add  rA and rB, store result in rZ
-	Dma_Add8(Cpu_OpAddReg_1,
+	Dma_FixedAdd8(Cpu_OpAddReg_1,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
@@ -1393,7 +1376,7 @@ Cpu_Opcode_End(AddReg)
 //
 Cpu_Opcode_Begin(AcyReg)
 	// Generate the carry from rA+rB, store in rZ
-	Dma_CarryFromAdd8(Cpu_OpAcyReg_1,
+	Dma_FixedCarryFromAdd8(Cpu_OpAcyReg_1,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
@@ -1410,8 +1393,8 @@ Cpu_Opcode_End(AcyReg)
 // +------+------+-------------+
 //
 Cpu_Opcode_Begin(JmpImm16)
-	               Dma_Declare_Descriptor(Cpu_OpJmpImm16_2)
-	               Dma_Declare_Descriptor(Cpu_OpJmpImm16_3)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpImm16_2)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpImm16_3)
 	DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpImm16_4)
 
 	// Load the program base into Cpu_NextPC
@@ -1423,7 +1406,7 @@ Cpu_Opcode_Begin(JmpImm16)
 	)
 
 	// Add lower 8-bit to program counter
-	Cpu_Add8to16(Cpu_OpJmpImm16_2,
+	Cpu_FixedAdd8to16(Cpu_OpJmpImm16_2,
 		(Dma_PtrToAddr(&gCpu.NextPC)      + 0u),
 		(Dma_PtrToAddr(&gCpu.ProgramBase) + 0u),
 		&gCpu.CurrentOPC.Bytes[0u],
@@ -1431,7 +1414,7 @@ Cpu_Opcode_Begin(JmpImm16)
 	)
 
 	// Add upper 8-bit to program counter
-	Cpu_Add8to16(Cpu_OpJmpImm16_3,
+	Cpu_FixedAdd8to16(Cpu_OpJmpImm16_3,
 		(Dma_PtrToAddr(&gCpu.NextPC) + 1u),
 		(Dma_PtrToAddr(&gCpu.NextPC) + 1u),
 		&gCpu.CurrentOPC.Bytes[1u],
@@ -1519,7 +1502,7 @@ Cpu_Opcode_Begin(BrNeImm)
 	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpBrNeImm_2)
 	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpBrNeImm_3)
 	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpBrNeImm_4)
-	                Dma_Declare_Descriptor(Cpu_OpBrNeImm_5)
+	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpBrNeImm_5)
 	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpBrNeImm_6)
 
 	// Fill the temporary LUT with the offset for branch taken (+off8)
@@ -1554,7 +1537,7 @@ Cpu_Opcode_Begin(BrNeImm)
 	)
 
 	// Update the lower 16-bits of the next PC (keep upper 16 bits intact)
-	Cpu_Add8to16(Cpu_OpBrNeImm_5,
+	Cpu_FixedAdd8to16(Cpu_OpBrNeImm_5,
 		(Dma_PtrToAddr(&gCpu.NextPC) + 0u),
 		(Dma_PtrToAddr(&gCpu.PC) + 0u),
 		&gCpu.Scratchpad[1u],
@@ -1799,9 +1782,9 @@ Cpu_Opcode_End(Jal)
 // +------+------+-------------+
 //
 Cpu_Opcode_Begin(Lit32)
-	Dma_Declare_Descriptor(Cpu_OpLit32_2)
-	Dma_Declare_Descriptor(Cpu_OpLit32_3)
-	Dma_Declare_Descriptor(Cpu_OpLit32_Commit)
+	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpLit32_2)
+	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpLit32_3)
+	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpLit32_Commit)
 
 	// Load the program base into the source address of the copy operation at step 4
 	Dma_FixedByteCopy(Cpu_OpLit32_1,
@@ -1812,7 +1795,7 @@ Cpu_Opcode_Begin(Lit32)
 	)
 
 	// Add lower 8-bit to the source address
-	Cpu_Add8to16(Cpu_OpLit32_2,
+	Cpu_FixedAdd8to16(Cpu_OpLit32_2,
 		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 0u),
 		(Dma_PtrToAddr(&gCpu.ProgramBase) + 0u),
 		&gCpu.CurrentOPC.Bytes[0u],
@@ -1820,7 +1803,7 @@ Cpu_Opcode_Begin(Lit32)
 	)
 
 	// Add upper 8-bit to the source address
-	Cpu_Add8to16(Cpu_OpLit32_3,
+	Cpu_FixedAdd8to16(Cpu_OpLit32_3,
 		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 1u),
 		(Dma_PtrToAddr(&Cpu_OpLit32_Commit.src) + 1u),
 		&gCpu.CurrentOPC.Bytes[1u],
@@ -2031,14 +2014,14 @@ Cpu_Opcode_Begin(StoreWord)
 	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpStoreWord_3)
 
 	// Step 1: Patch in the lower 16 bits of the destination address
-	DMACU_READONLY Dma_PatchDstLo16(Cpu_OpStoreWord_1,
+	Dma_FixedPatchDstLo16(Cpu_OpStoreWord_1,
 		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		&Cpu_OpStoreByte_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
-	DMACU_READONLY Dma_PatchDstHi16(Cpu_OpStoreWord_2,
+	Dma_FixedPatchDstHi16(Cpu_OpStoreWord_2,
 		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		&Cpu_OpStoreByte_3
@@ -2087,10 +2070,10 @@ Cpu_Opcode_End(StoreWord)
 // -> Host sets gCpu.NextPC (typ. to gCpu.PC) and restarts DMA from Cpu_Fetch_1 stage.
 //
 Cpu_Opcode_Begin(Undef)
-	DMACU_PRIVATE const uint32_t Cpu_OpUndef_Lit_DEADC0DE = 0xDEADC0DEu;
+	DMACU_PRIVATE DMACU_CONST uint32_t Cpu_OpUndef_Lit_DEADC0DE = 0xDEADC0DEu;
 
 	// Copy the 0xDEADC0DE value to Cpu_NextPC, then halt via LLI=0
-	DMACU_READONLY Dma_ByteCopy(Cpu_OpUndef_1,
+	Dma_FixedByteCopy(Cpu_OpUndef_1,
 		&gCpu.NextPC,
 		&Cpu_OpUndef_Lit_DEADC0DE,
 		4u,
