@@ -1150,13 +1150,10 @@ Dma_FixedByteCopy(Cpu_Reset_1, &gCpu.ProgramBase, &gCpu.PC, sizeof(uint32_t),   
 Dma_FixedByteFill(Cpu_Reset_2, &gCpu.RegFile[0], Dmacu_PtrToByteLiteral(0x00u), sizeof(gCpu.RegFile) - 32u, &Cpu_Fetch_1)
 
 //-----------------------------------------------------------------------------------------
-void Dmacu_Run(const uint32_t *initial_pc)
+const Dma_Descriptor_t* Dmacu_CpuBootDescriptor(void)
 {
-	// Setup the CPU's initial program counter
-    gCpu.ProgramBase = Dma_PtrToAddr(initial_pc);
-
-	// Start execution of our virtual CPU
-    Hal_DmaTransfer(&Cpu_Reset_1);
+	// Get the DMA descriptor for a CPU boot (reset)
+	return &Cpu_Reset_1;
 }
 
 //-----------------------------------------------------------------------------------------

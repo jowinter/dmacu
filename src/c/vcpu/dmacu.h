@@ -208,15 +208,17 @@ typedef struct Dmacu_Cpu
 ///
 extern Dmacu_Cpu_t* Dmacu_GetCpu(void);
 
+/// \brief Gets the DMA descriptor for booting and running the virtual CPU.
+///
+extern const Dma_Descriptor_t* Dmacu_CpuBootDescriptor(void);
+
 //-------------------------------------------------------------------------------------------------
 // Helper functions to interact with the virtual CPU
 //
 
-/// \brief Runs a program on the DMACU virtual CPU.
+/// \brief Boots the virtual CPU and executes the built-in test program (see utils.c).
 ///
-/// \param[in] initial_pc is the initial program counter for the DMACU program to execute.
-///
-extern void Dmacu_Run(const uint32_t *initial_pc);
+extern void Dmacu_RunTestProgram(void);
 
 /// \brief Configures a DMACU virtual CPU for executing a test small program.
 ///

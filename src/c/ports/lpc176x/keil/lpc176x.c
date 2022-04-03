@@ -53,7 +53,7 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 {
 	// Assume transfer is not done
 	gDmaTransferDone = 0;
-	
+
 	// Setup the channel
 	const uint32_t ctrl = (desc->ctrl & 0xFFFFF000u);
 	const uint32_t size = (desc->ctrl & 0x00000FFFu);
@@ -62,19 +62,19 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 	{
 		__builtin_trap();
 	}
-	
+
 	// Start the DMA transfer
 	if (0 != GPDMA_ChannelEnable(DMACU_DMA_CHANNEL))
 	{
 		__builtin_trap();
 	}
-	
+
 	// Wait for the DMA transfer to complete
 	while (gDmaTransferDone != 0xFFFFFFFFu)
 	{
 		__WFE();
 	}
-	
+
 	// And stop the channel
 	if (0 != GPDMA_ChannelDisable(DMACU_DMA_CHANNEL))
 	{

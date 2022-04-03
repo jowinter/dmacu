@@ -24,10 +24,7 @@
 //-----------------------------------------------------------------------------------------
 void Hal_Init(void)
 {
-	Dmacu_Cpu_t *cpu = Dmacu_GetCpu();
-
-	// Setup the test program
-	Dmacu_SetupTestProgram(cpu);
+	// No special initialization needed.
 }
 
 //-----------------------------------------------------------------------------------------
@@ -48,9 +45,6 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *entry)
 		.config   = UINT32_C(0x0000000001)
 	};
 
-	// Dump the initial CPU state (after test program setup)
-	Dmacu_DumpCpuState("vcpu[init]", cpu);
-
 	uint32_t old_state = cpu->DbgState;
 
 	while (PL080_Channel_Process(&ch0))
@@ -67,8 +61,4 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *entry)
 			old_state = cpu->DbgState;
 		}
 	}
-
-	printf("vcpu[run] dma transfers done (virtual cpu is stopped)\n");
-
-	Dmacu_DumpCpuState("vcpu[exit]", cpu);
 }

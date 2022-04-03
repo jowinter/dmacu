@@ -31,20 +31,12 @@
 //-----------------------------------------------------------------------------------------
 void Hal_Init(void)
 {
-	Dmacu_Cpu_t *cpu = Dmacu_GetCpu();
-
-	// Setup the test program
-	Dmacu_SetupTestProgram(cpu);
+	// No speical initialization needed
 }
 
 //-----------------------------------------------------------------------------------------
 void Hal_DmaTransfer(const Dma_Descriptor_t *entry)
 {
-	Dmacu_Cpu_t *cpu = Dmacu_GetCpu();
-
-	// Dump the initial CPU state (after test program setup)
-	Dmacu_DumpCpuState("vcpu[init]", cpu);
-
 	// Enable the DMA controller
 	PL080_DMA_REG(0x030) |= UINT32_C(0x00000001);
 
@@ -57,17 +49,11 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *entry)
 	// Set the channel configuration for channel 0 (and enable)
 	PL080_DMA_REG(0x110) = UINT32_C(0x0000000001);
 
-	printf("vcpu[run] started on dma channel #0\n");
-
 	while (UINT32_C(0) != (PL080_DMA_REG(0x01C) & UINT32_C(0x00000008)))
 	{
 		// Wait for the DMA controller
 	}
 
-	printf("vcpu[run] dma transfers done (virtual cpu is stopped)\n");
-
 	// Clear configuration for DMA channel #0 and stop.
 	PL080_DMA_REG(0x110) = UINT32_C(0x0000000000);
-
-	Dmacu_DumpCpuState("vcpu[exit]", cpu);
 }
