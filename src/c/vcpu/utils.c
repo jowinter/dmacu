@@ -17,7 +17,9 @@
 #include <string.h>
 
 // Enable dumping of the ROM on Dmacu_DumpCpuState
-#define DMACU_DUMP_ROM (0)
+#if !defined(DMACU_DUMP_ROM)
+# define DMACU_DUMP_ROM (1)
+#endif
 
 //-----------------------------------------------------------------------------------------
 ///  \brief Host scratch area (for read/write tests to host memory)
@@ -34,14 +36,14 @@ DMACU_ALIGNED(0x1000)
 static uint8_t gTestRam[64u] =
 {
 	// Some string to (de-obfuscate)
-	OBF_BYTE('H'), OBF_BYTE('e'), OBF_BYTE('l'), OBF_BYTE('l'), OBF_BYTE('o'),
-	OBF_BYTE(' '), OBF_BYTE('b'), OBF_BYTE('r'), OBF_BYTE('a'), OBF_BYTE('v'),
-	OBF_BYTE('e'), OBF_BYTE(' '), OBF_BYTE('n'), OBF_BYTE('e'), OBF_BYTE('w'),
-	OBF_BYTE(' '), OBF_BYTE('P'), OBF_BYTE('L'), OBF_BYTE('0'), OBF_BYTE('8'),
-	OBF_BYTE('0'), OBF_BYTE(' '), OBF_BYTE('D'), OBF_BYTE('M'), OBF_BYTE('A'),
-	OBF_BYTE(' '), OBF_BYTE('w'), OBF_BYTE('o'), OBF_BYTE('r'), OBF_BYTE('l'),
-	OBF_BYTE('d'), OBF_BYTE('!'), OBF_BYTE('\0')
-};
+	OBF_BYTE('H'),  OBF_BYTE('e'),  OBF_BYTE('l'),   OBF_BYTE('l'),  OBF_BYTE('o'),
+	OBF_BYTE(' '),  OBF_BYTE('b'),  OBF_BYTE('r'),   OBF_BYTE('a'),  OBF_BYTE('v'),
+	OBF_BYTE('e'),  OBF_BYTE(' '),  OBF_BYTE('n'),   OBF_BYTE('e'),  OBF_BYTE('w'),
+	OBF_BYTE(' '),  OBF_BYTE('P'),  OBF_BYTE('L'),   OBF_BYTE('0'),  OBF_BYTE('8'),
+	OBF_BYTE('0'),  OBF_BYTE(' '),  OBF_BYTE('D'),   OBF_BYTE('M'),  OBF_BYTE('A'),
+	OBF_BYTE(' '),  OBF_BYTE('w'),  OBF_BYTE('o'),   OBF_BYTE('r'),  OBF_BYTE('l'),
+	OBF_BYTE('d'),  OBF_BYTE('!'),  OBF_BYTE('\n'),  OBF_BYTE('\0')
+ };
 
 //-----------------------------------------------------------------------------------------
 /// \brief Static test program
@@ -177,25 +179,43 @@ void Dmacu_RunTestProgram(void)
 	Dmacu_SetupTestProgram(cpu);
 
 	// Dump the initial CPU state (after test program setup)
+#if !DMACU_QUIET
 	Dmacu_DumpCpuState("vcpu[init]", cpu);
+#endif
 
 	// And run the DMA transfer for the test program
 	Hal_DmaTransfer(Dmacu_CpuBootDescriptor());
 
 	// Dump the virtual CPU state on exit.
+#if !DMACU_QUIET
 	printf("vcpu[run] dma transfers done (virtual cpu is stopped)\n");
 	Dmacu_DumpCpuState("vcpu[exit]", cpu);
+#endif
+
+	// I am feeling lucky :)
+	for (unsigned i = 0u; i < sizeof(gTestRam); ++i)
+	{
+		const uint8_t c = gTestRam[i];
+		if (c == '\0')
+		{
+			break;
+		}
+
+		putchar(c);
+	}
 }
 
 //-----------------------------------------------------------------------------------------
 void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu)
 {
+#if !DMACU_QUIET
 	printf("%s        PC: %08X  NextPC: %08X Base: %08X\n"
 		"%s       OPC: %08X\n"
 		"%s        rA: %04X  rB: %04X  rZ: %04X\n",
 	    prefix, (unsigned) cpu->PC, (unsigned) cpu->NextPC, (unsigned) cpu->ProgramBase,
 		prefix, (unsigned) cpu->CurrentOPC.Value,
-		prefix, (unsigned) cpu->Operands.A, (unsigned) cpu->Operands.B, (unsigned) cpu->Operands.Z);
+		prefix, (unsigned) cpu->Operands.A,
+		(unsigned) cpu->Operands.B, (unsigned) cpu->Operands.Z);
 
 	printf("%s  =========================================================\n", prefix);
 
@@ -221,7 +241,8 @@ void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu)
 	// Test RAM
 	for (unsigned i = 0u; i < sizeof(gTestRam); i += 16u)
 	{
-		const unsigned line_len = (sizeof(gTestRam) - i) > 16u ? 16u :  (sizeof(gTestRam) - i);
+		const unsigned line_len = (sizeof(gTestRam) - i) > 16u ?
+			16u :  (sizeof(gTestRam) - i);
 
 		printf("%s  RAM[%03X]:", prefix, (unsigned) i);
 
@@ -248,7 +269,7 @@ void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu)
 		printf("\n");
 	}
 
-#if DMACU_DUMP_ROM
+# if DMACU_DUMP_ROM
 	printf("%s  =========================================================\n", prefix);
 
 	// Test ROM
@@ -259,15 +280,22 @@ void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu)
 	{
 		const unsigned line_len = (rom_size - i) > 4u ? 4u :  (rom_size - i);
 
-		printf("%s  ROM[%04X]:", prefix, (unsigned) i);
+		printf("%s  ROM[%03X]:", prefix, (unsigned) i);
 
 		// Hexdump
 		for (unsigned j = 0u; j < line_len; ++j)
 		{
-			printf(" %08X", (unsigned) rom_data[i + j]);
+			const uint32_t w = rom_data[i + j];
+			printf(" %02X_%06X", (unsigned) ((w >> 24u) & 0xFFu),
+				(unsigned) (w & 0x00FFFFFFu));
 		}
 
 		printf("\n");
 	}
+# endif
+#else
+	// Quiet mode
+	(void) prefix;
+	(void) cpu;
 #endif
 }

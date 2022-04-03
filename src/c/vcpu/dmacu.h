@@ -18,6 +18,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// Quiet mode
+#if !defined(DMACU_QUIET)
+# define DMACU_QUIET (0)
+#endif
 
 #ifndef DMACU_ALIGNED
 # define DMACU_ALIGNED(x) __attribute__((__aligned__((x))))
