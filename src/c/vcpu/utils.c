@@ -14,6 +14,7 @@
 #include "dmacu.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 // Enable dumping of the ROM on Dmacu_DumpCpuState
@@ -32,10 +33,11 @@
 #define OBF_BYTE(x) (OBF_ROR1(x) ^ 0xC3u)
 
 //-----------------------------------------------------------------------------------------
-DMACU_ALIGNED(0x1000)
-static uint8_t gTestRam[64u] =
+// Reference test message (obfuscated)
+//
+static volatile const uint8_t gkTestMessage[] =
 {
-	// Some string to (de-obfuscate)
+    // Some string to (de-obfuscate)
 	OBF_BYTE('H'),  OBF_BYTE('e'),  OBF_BYTE('l'),   OBF_BYTE('l'),  OBF_BYTE('o'),
 	OBF_BYTE(' '),  OBF_BYTE('b'),  OBF_BYTE('r'),   OBF_BYTE('a'),  OBF_BYTE('v'),
 	OBF_BYTE('e'),  OBF_BYTE(' '),  OBF_BYTE('n'),   OBF_BYTE('e'),  OBF_BYTE('w'),
@@ -43,7 +45,11 @@ static uint8_t gTestRam[64u] =
 	OBF_BYTE('0'),  OBF_BYTE(' '),  OBF_BYTE('D'),   OBF_BYTE('M'),  OBF_BYTE('A'),
 	OBF_BYTE(' '),  OBF_BYTE('w'),  OBF_BYTE('o'),   OBF_BYTE('r'),  OBF_BYTE('l'),
 	OBF_BYTE('d'),  OBF_BYTE('!'),  OBF_BYTE('\n'),  OBF_BYTE('\0')
- };
+};
+
+//-----------------------------------------------------------------------------------------
+DMACU_ALIGNED(0x1000)
+static volatile uint8_t gTestRam[64u];
 
 //-----------------------------------------------------------------------------------------
 /// \brief Static test program
@@ -168,6 +174,12 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[253u] = (uint8_t) ((ram_base >> 8u)  & 0xFFu);
 	cpu->RegFile[254u] = (uint8_t) ((ram_base >> 16u) & 0xFFu);
 	cpu->RegFile[255u] = (uint8_t) ((ram_base >> 24u) & 0xFFu);
+
+    // Setup the test RAM
+    for (uint32_t i = 0u; i < sizeof(gTestRam); ++i)
+    {
+        gTestRam[i] = (i < sizeof(gkTestMessage)) ? gkTestMessage[i] : 0u;
+    }
 }
 
 //-----------------------------------------------------------------------------------------
@@ -195,7 +207,7 @@ void Dmacu_RunTestProgram(void)
 	// I am feeling lucky :)
 	for (unsigned i = 0u; i < sizeof(gTestRam); ++i)
 	{
-		const uint8_t c = gTestRam[i];
+		volatile const uint8_t c = gTestRam[i];
 		if (c == '\0')
 		{
 			break;
@@ -205,7 +217,18 @@ void Dmacu_RunTestProgram(void)
 		// Print the test character
 		putchar(c);
 #endif
+
+		// Check that the test message has been deobfuscated correctly
+		if (i < sizeof(gkTestMessage))
+		{
+			if (OBF_BYTE(c) != gkTestMessage[i])
+			{
+				abort();
+			}
+		}
 	}
+
+
 }
 
 //-----------------------------------------------------------------------------------------
