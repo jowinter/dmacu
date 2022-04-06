@@ -35,39 +35,39 @@
 //-------------------------------------------------------------------------------------------------
 void Hal_Init(void)
 {
-    // Enable DMA clock
-    LPC_SC->PCONP |= (1U << 29);
+	// Enable DMA clock
+	LPC_SC->PCONP |= (1U << 29);
 }
 
 //-------------------------------------------------------------------------------------------------
 void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 {
-    // Ensure that the DMA controller is enabled
-    LPC_GPDMA->DMACConfig |= GPDMA_CONFIG_E;
+	// Ensure that the DMA controller is enabled
+	LPC_GPDMA->DMACConfig |= GPDMA_CONFIG_E;
 
-    // Halt channel #0 (initial status is unknown)
-    LPC_GPDMACH0->DMACCConfig |= GPDMA_CH_CONFIG_H;
+	// Halt channel #0 (initial status is unknown)
+	LPC_GPDMACH0->DMACCConfig |= GPDMA_CH_CONFIG_H;
 
-    while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_A))
-    {
-        __NOP();
-    }
+	while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_A))
+	{
+		__NOP();
+	}
 
-    // Disable the channel (and clear the halt flag)
-    LPC_GPDMACH0->DMACCConfig = 0u;
+	// Disable the channel (and clear the halt flag)
+	LPC_GPDMACH0->DMACCConfig = 0u;
 
-    // Load the initial descriptor
-    LPC_GPDMACH0->DMACCSrcAddr  = desc->src;
-    LPC_GPDMACH0->DMACCDestAddr = desc->dst;
-    LPC_GPDMACH0->DMACCLLI      = desc->lli;
-    LPC_GPDMACH0->DMACCControl  = desc->ctrl;
+	// Load the initial descriptor
+	LPC_GPDMACH0->DMACCSrcAddr  = desc->src;
+	LPC_GPDMACH0->DMACCDestAddr = desc->dst;
+	LPC_GPDMACH0->DMACCLLI      = desc->lli;
+	LPC_GPDMACH0->DMACCControl  = desc->ctrl;
 
-    // Enable the channel
-    LPC_GPDMACH0->DMACCConfig   |= GPDMA_CH_CONFIG_E;
+	// Enable the channel
+	LPC_GPDMACH0->DMACCConfig   |= GPDMA_CH_CONFIG_E;
 
-    // Wait until the channel becomes idle
-    while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_E))
-    {
-        __NOP();
-    }
+	// Wait until the channel becomes idle
+	while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_E))
+	{
+		__NOP();
+	}
 }
