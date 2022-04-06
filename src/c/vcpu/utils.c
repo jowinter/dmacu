@@ -186,8 +186,8 @@ void Dmacu_RunTestProgram(void)
 	// And run the DMA transfer for the test program
 	Hal_DmaTransfer(Dmacu_CpuBootDescriptor());
 
-	// Dump the virtual CPU state on exit.
 #if !DMACU_QUIET
+	// Dump the virtual CPU state on exit.
 	printf("vcpu[run] dma transfers done (virtual cpu is stopped)\n");
 	Dmacu_DumpCpuState("vcpu[exit]", cpu);
 #endif
@@ -201,7 +201,10 @@ void Dmacu_RunTestProgram(void)
 			break;
 		}
 
+#if !DMACU_QUIET
+		// Print the test character
 		putchar(c);
+#endif
 	}
 }
 
