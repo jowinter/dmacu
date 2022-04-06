@@ -17,67 +17,57 @@
 #include "RTE_Device.h"
 #include CMSIS_device_header
 
-#include "GPDMA_LPC17xx.h"
-
 #ifndef DMACU_DMA_CHANNEL
 # define DMACU_DMA_CHANNEL (0u)
 #endif
 
-// Completion markrer
-static volatile uint32_t gDmaTransferDone;
+//  GPDMA Configuration register definitions
+#define GPDMA_CONFIG_E                     (1U    <<  0)
+#define GPDMA_CONFIG_M0                    (1U    <<  1)
+#define GPDMA_CONFIG_M1                    (1U    <<  2)
+
+// GPDMA Channel Configuration registers definitions
+#define GPDMA_CH_CONFIG_E                  (1U    <<  0)
+#define GPDMA_CH_CONFIG_A                  (1U    << 17)
+#define GPDMA_CH_CONFIG_H                  (1U    << 18)
+
 
 //-------------------------------------------------------------------------------------------------
 void Hal_Init(void)
 {
-	// Initialize the GPDMA (PL080) driver
-	if (0 != GPDMA_Initialize())
-	{
-		__builtin_trap();
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-static void Hal_DmaTransferCallback(unsigned int event)
-{
-	// Currently not used
-	(void) event;
-
-	// Signal transfer completion
-	gDmaTransferDone = 0xFFFFFFFFu;
-
-	__SEV();
+    // Enable DMA clock
+    LPC_SC->PCONP |= (1U << 29);
 }
 
 //-------------------------------------------------------------------------------------------------
 void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 {
-	// Assume transfer is not done
-	gDmaTransferDone = 0;
+    // Ensure that the DMA controller is enabled
+    LPC_GPDMA->DMACConfig |= GPDMA_CONFIG_E;
 
-	// Setup the channel
-	const uint32_t ctrl = (desc->ctrl & 0xFFFFF000u);
-	const uint32_t size = (desc->ctrl & 0x00000FFFu);
+    // Halt channel #0 (initial status is unknown)
+    LPC_GPDMACH0->DMACCConfig |= GPDMA_CH_CONFIG_H;
 
-	if (0 != GPDMA_ChannelConfigure(DMACU_DMA_CHANNEL, desc->src, desc->dst, size, ctrl, 0u, &Hal_DmaTransferCallback))
-	{
-		__builtin_trap();
-	}
+    while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_A))
+    {
+        __NOP();
+    }
 
-	// Start the DMA transfer
-	if (0 != GPDMA_ChannelEnable(DMACU_DMA_CHANNEL))
-	{
-		__builtin_trap();
-	}
+    // Disable the channel (and clear the halt flag)
+    LPC_GPDMACH0->DMACCConfig = 0u;
 
-	// Wait for the DMA transfer to complete
-	while (gDmaTransferDone != 0xFFFFFFFFu)
-	{
-		__WFE();
-	}
+    // Load the initial descriptor
+    LPC_GPDMACH0->DMACCSrcAddr  = desc->src;
+    LPC_GPDMACH0->DMACCDestAddr = desc->dst;
+    LPC_GPDMACH0->DMACCLLI      = desc->lli;
+    LPC_GPDMACH0->DMACCControl  = desc->ctrl;
 
-	// And stop the channel
-	if (0 != GPDMA_ChannelDisable(DMACU_DMA_CHANNEL))
-	{
-		__builtin_trap();
-	}
+    // Enable the channel
+    LPC_GPDMACH0->DMACCConfig   |= GPDMA_CH_CONFIG_E;
+
+    // Wait until the channel becomes idle
+    while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_E))
+    {
+        __NOP();
+    }
 }
