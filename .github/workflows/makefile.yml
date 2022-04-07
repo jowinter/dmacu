@@ -21,3 +21,9 @@ jobs:
     
     - name: Build QEMU simulation target
       run: make -C src/c/ dmacu.elf
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: src/c/dmacu.elf
