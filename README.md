@@ -1,5 +1,7 @@
 # Minimal CPU Emulator Powered by the ARM PL080 DMA Controller (dmacu)
 
+[![Makefile CI](https://github.com/jowinter/dmacu/actions/workflows/makefile.yml/badge.svg)](https://github.com/jowinter/dmacu/actions/workflows/makefile.yml)
+
 ## Overview
 `dmacu` is an emulator for a simple hypothetical RISC-like processor intended to run on an ARM platform including a PL080 DMA controller.
 The `dmacu` emulator itself executes on a DMA channel of the host system's PL080 DMA controller. Interaction from the host system's ARM core
