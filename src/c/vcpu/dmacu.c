@@ -1123,7 +1123,7 @@ Cpu_Stage_Begin(Cpu_Fetch)
 	DMACU_READONLY Dma_Declare_Descriptor(Cpu_Reset_2)
 
 	// RST.1: Capture the program base address (=initial PC)
-	Dma_FixedByteCopy(Cpu_Reset_1, &gCpu.ProgramBase, &gCpu.PC, sizeof(uint32_t),   &Cpu_Reset_2)
+	Dma_FixedWordCopy(Cpu_Reset_1, &gCpu.ProgramBase, &gCpu.PC, 1u, &Cpu_Reset_2)
 
 	// RST.2: Clear registers r0-r223 (r224-r255 are provided by the environment)
 	Dma_FixedByteFill(Cpu_Reset_2, &gCpu.RegFile[0], Dmacu_PtrToByteLiteral(0x00u), sizeof(gCpu.RegFile) - 32u, &Cpu_Fetch_1)
@@ -1149,14 +1149,14 @@ Cpu_Stage_Begin(Cpu_Fetch)
 	// FE.1: Setup source address for instruction fetch
 	Dma_FixedPatchSrc(Cpu_Fetch_1, &Cpu_Fetch_2, &gCpu.PC, &Cpu_Fetch_2)
 
-	// FE.2: Fetch current instruction into opcode buffer
-	Dma_ByteCopy(Cpu_Fetch_2, &gCpu.CurrentOPC.Bytes[0], DMA_INVALID_ADDR, sizeof(gCpu.CurrentOPC), &Cpu_Fetch_3)
+	// FE.2: Fetch current instruction into opcode buffer (we assume that the PC is always word-aligned)
+	Dma_WordCopy(Cpu_Fetch_2, &gCpu.CurrentOPC, DMA_INVALID_ADDR, 1u, &Cpu_Fetch_3)
 
 	// FE.3: Generate lower 16 bit of next program counter
 	Cpu_FixedAdd16Imm(Cpu_Fetch_3, &gCpu.NextPC, &gCpu.PC, 4u, &Cpu_Fetch_4)
 
 	// FE.4: Copy upper 16 bit of program counter then link to decode stage
-	Dma_FixedByteCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 2u, &Cpu_Decode_1)
+	Dma_FixedHalfWordCopy(Cpu_Fetch_4, Dma_PtrToAddr(&gCpu.NextPC) + 2u, Dma_PtrToAddr(&gCpu.PC) + 2u, 1u, &Cpu_Decode_1)
 Cpu_Stage_End(Cpu_Fetch)
 
 //-----------------------------------------------------------------------------------------
@@ -1884,10 +1884,10 @@ Cpu_Opcode_Begin(LoadHalf)
 	// Step 3: Perform the load operation (half-word)
 	//
 	// FIXME: Use a 16-bit DMA access (instead of two 8-bit DMA accesses)
-	Dma_ByteCopy(Cpu_OpLoadHalf_3,
+	Dma_HalfWordCopy(Cpu_OpLoadHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
 		DMA_INVALID_ADDR,
-		2u,
+		1u,
 		&Cpu_Writeback_TwoRegs
 	)
 Cpu_Opcode_End(LoadHalf)
@@ -1921,10 +1921,10 @@ Cpu_Opcode_Begin(LoadWord)
 	// Step 3: Perform the load operation (half-word)
 	//
 	// FIXME: Use a 32-bit DMA access (instead of four 8-bit DMA accesses)
-	Dma_ByteCopy(Cpu_OpLoadWord_3,
+	Dma_WordCopy(Cpu_OpLoadWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
 		DMA_INVALID_ADDR,
-		4u,
+		1u,
 		&Cpu_Writeback_FourRegs
 	)
 Cpu_Opcode_End(LoadWord)
@@ -1991,12 +1991,10 @@ Cpu_Opcode_Begin(StoreHalf)
 	)
 
 	// Step 3: Perform the store operation (byte)
-	//
-	// FIXME: Use a 16-bit DMA access (instead of two 8-bit DMA accesses)
-	Dma_ByteCopy(Cpu_OpStoreHalf_3,
+	Dma_HalfWordCopy(Cpu_OpStoreHalf_3,
 	    DMA_INVALID_ADDR,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
-		2u,
+		1u,
 		&Cpu_Writeback_PC
 	)
 Cpu_Opcode_End(StoreHalf)
@@ -2028,12 +2026,10 @@ Cpu_Opcode_Begin(StoreWord)
 	)
 
 	// Step 3: Perform the store operation (byte)
-	//
-	// FIXME: Use a 32-bit DMA access (instead of four 8-bit DMA accesses)
-	Dma_ByteCopy(Cpu_OpStoreWord_3,
+	Dma_WordCopy(Cpu_OpStoreWord_3,
 	    DMA_INVALID_ADDR,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
-		4u,
+		1u,
 		&Cpu_Writeback_PC
 	)
 Cpu_Opcode_End(StoreWord)
@@ -2073,10 +2069,10 @@ Cpu_Opcode_Begin(Undef)
 	DMACU_PRIVATE DMACU_CONST uint32_t Cpu_OpUndef_Lit_DEADC0DE = 0xDEADC0DEu;
 
 	// Copy the 0xDEADC0DE value to Cpu_NextPC, then halt via LLI=0
-	Dma_FixedByteCopy(Cpu_OpUndef_1,
+	Dma_FixedWordCopy(Cpu_OpUndef_1,
 		&gCpu.NextPC,
 		&Cpu_OpUndef_Lit_DEADC0DE,
-		4u,
+		1u,
 		DMA_INVALID_ADDR
 	)
 Cpu_Opcode_End(Undef)

@@ -38,6 +38,12 @@ typedef struct
 #define PL080_CH_CTRL_SIZE_POS  UINT32_C(0)
 #define PL080_CH_CONFIG_E       UINT32_C(0x00000001)
 
+#define PL080_CH_CTRL_DWIDTH_MASK UINT32_C(0x00E00000)
+#define PL080_CH_CTRL_DWIDTH_POS  UINT32_C(21)
+
+#define PL080_CH_CTRL_SWIDTH_MASK UINT32_C(0x001C0000)
+#define PL080_CH_CTRL_SWIDTH_POS  UINT32_C(18)
+
 /// \brief Processes a transfer descriptor on a PL080 DMA channel
 ///
 /// \param[in,out] ch points to the emulated PL080 DMA channel to be updated.

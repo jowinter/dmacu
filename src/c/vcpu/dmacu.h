@@ -108,17 +108,29 @@ typedef struct Dma_Descriptor
 #define Dma_Local_Reference(_self,_suffix) \
     (&Dma_Local_Name(_self, _suffix))
 
-/// \brief Basic byte-wise DMA copy operation
+/// \brief Common DMA copy core operation
 ///
 /// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
 ///
-#define Dma_ByteCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
+/// width indicates the source/destination transfer width in PL080's log-2 encoding:
+///  - width=0 generates a byte copy
+///  - width=1 generates a half-word (16-bit) copy
+///  - width=2 generates a word (32-bit) copy
+///
+#define Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,_width) \
     _qual Dma_Define_Descriptor(_self, \
         .src  = (Dma_UIntPtr_t) (_src), \
         .dst  = (Dma_UIntPtr_t) (_dst), \
         .lli  = (Dma_UIntPtr_t) (_lli), \
-        .ctrl = UINT32_C(0x0C000000) + (uint32_t) (_size) \
+        .ctrl = UINT32_C(0x0C000000) + (((_width) & 0x3u) << 21u) + (((_width) & 0x3u) << 18u) + (uint32_t) (_size) \
     )
+
+/// \brief Basic byte (8-bit) wise DMA copy operation
+///
+/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
+///
+#define Dma_ByteCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
+    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,0u)
 
 // Patchable version of Dma_ByteCopy
 #define Dma_ByteCopy(_self,_dst,_src,_size,_lli) \
@@ -127,6 +139,38 @@ typedef struct Dma_Descriptor
 // Fixed (non-patchable) version of Dma_ByteCopy
 #define Dma_FixedByteCopy(_self,_dst,_src,_size,_lli) \
     Dma_ByteCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
+
+/// \brief Basic half-word (16-bit) wise DMA copy operation
+///
+/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
+/// Size give the number of 16-bit half-words to copy
+///
+#define Dma_HalfWordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
+    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,1u)
+
+// Patchable version of Dma_HalfWordCopy
+#define Dma_HalfWordCopy(_self,_dst,_src,_size,_lli) \
+    Dma_HalfWordCopy_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
+
+// Fixed (non-patchable) version of DmaHalfWordCopy
+#define Dma_FixedHalfWordCopy(_self,_dst,_src,_size,_lli) \
+    Dma_HalfWordCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
+
+/// \brief Basic word (32-bit) wise DMA copy operation
+///
+/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
+/// Size give the number of 32-bit words to copy
+///
+#define Dma_WordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
+    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,2u)
+
+// Patchable version of Dma_WordCopy
+#define Dma_WordCopy(_self,_dst,_src,_size,_lli) \
+    Dma_WordCopy_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
+
+// Fixed (non-patchable) version of DmaHalfWordCopy
+#define Dma_FixedWordCopy(_self,_dst,_src,_size,_lli) \
+    Dma_WordCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
 
 /// \brief Basic byte-wise DMA fill operation.
 ///

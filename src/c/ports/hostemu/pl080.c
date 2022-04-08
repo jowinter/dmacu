@@ -18,6 +18,8 @@
 //
 #include "pl080.h"
 
+#include <stdlib.h>
+
 /// \brief Enable logging of DMA transactions (for debugging)
 #define LOG_DMA (0)
 
@@ -32,7 +34,11 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 		// TODO: Check for channel control, we currently ignore most of it and
 		// statically assume byte transfers.
 		uint32_t ctrl = ch->control;
-		uint32_t size = (ctrl >> PL080_CH_CTRL_SIZE_POS) & PL080_CH_CTRL_SIZE_MASK;
+		uint32_t size = (ctrl & PL080_CH_CTRL_SIZE_MASK) >> PL080_CH_CTRL_SIZE_POS;
+
+		// Extract source and destination width (in bytes)
+		uint32_t dwidth = 1u << ((ctrl & PL080_CH_CTRL_DWIDTH_MASK) >> PL080_CH_CTRL_DWIDTH_POS);
+		uint32_t swidth = 1u << ((ctrl & PL080_CH_CTRL_SWIDTH_MASK) >> PL080_CH_CTRL_SWIDTH_POS);
 
 		if (size > 0u)
 		{
@@ -43,10 +49,23 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 			volatile uint8_t *const dst = (uint8_t *) ch->dst_addr;
 
 #if (LOG_DMA >= 2)
-			printf ("dma[copy] %p -> %p size:%u data:[", (void *) src, (void *) dst, size);
-#endif
-			// Process any data to copy
+			printf ("dma[copy] %p -> %p size:%u dwidth:%u swidth:%u data:[", (void *) src, (void *) dst,
+				size, dwidth, swidth);
 
+			// We only support the swidth==dwidth case properly (at the moment).
+			if (dwidth != swidth)
+			{
+				printf("dma[copy]: critical warning: pl080 model only supports dwidth==swidth\n");
+			}
+#endif
+
+			// Scale the size by our destination width (this likely produces strange effects if swidth != dwidth)
+			size *= dwidth;
+
+			if (swidth != 1)
+				printf ("dma[copy] %p -> %p size:%u dwidth:%u swidth:%u\n", (void *) src, (void *) dst, size, dwidth, swidth);
+
+			// Process any data to copy
 			uint32_t src_off = 0u;
 			uint32_t dst_off = 0u;
 
