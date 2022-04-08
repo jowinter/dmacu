@@ -28,10 +28,27 @@
 // Register of the PL080 DMAC (offset gives offset relative to controller base address)
 #define PL080_DMA_REG(offset) (* (volatile uint32_t *) (PL080_DMA_BASE_ADDR + (offset)))
 
+//-------------------------------------------------------------------------------------------------
+// Dummy HAL configuration
+//
+
+// RealView System Control Block (and its LEDs register)
+#define ARM_SYSCTL_BASE_ADDR UINT32_C(0x10000000)
+#define ARM_SYSCTL_REG(offset)  (*(volatile uint32_t *) (ARM_SYSCTL_BASE_ADDR + (offset)))
+
+#define GPIO_LED_MASK (1u)
+
+const Hal_Config_t gHalConfig =
+{
+    .gpio_pin_reg  = &ARM_SYSCTL_REG(0x008),
+    .gpio_led_mask = GPIO_LED_MASK
+};
+
 //-----------------------------------------------------------------------------------------
 void Hal_Init(void)
 {
-	// No speical initialization needed
+	// Disable all virtual LEDs
+	ARM_SYSCTL_REG(0x008) = 0u;
 }
 
 //-----------------------------------------------------------------------------------------

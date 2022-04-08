@@ -31,12 +31,24 @@
 #define GPDMA_CH_CONFIG_A                  (1U    << 17)
 #define GPDMA_CH_CONFIG_H                  (1U    << 18)
 
+#define GPIO_LED_MASK   (1u << 22)
+
+//-------------------------------------------------------------------------------------------------
+const Hal_Config_t gHalConfig =
+{
+    .gpio_pin_reg  = &LPC_GPIO0->FIOPIN,
+    .gpio_led_mask = GPIO_LED_MASK
+};
 
 //-------------------------------------------------------------------------------------------------
 void Hal_Init(void)
 {
 	// Enable DMA clock
 	LPC_SC->PCONP |= (1U << 29);
+
+    // For simplicity: Setup GPIOs for blinking the on-board led of the LPC1769 LPCXpresso board
+    LPC_PINCON->PINSEL1 &= ~(3u << 12u);
+    LPC_GPIO0->FIODIR |= (1u << 22);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -62,6 +74,9 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 	LPC_GPDMACH0->DMACCLLI      = desc->lli;
 	LPC_GPDMACH0->DMACCControl  = desc->ctrl;
 
+    // Set the GPIO pin
+    LPC_GPIO0->FIOSET = (1u << 22);
+
 	// Enable the channel
 	LPC_GPDMACH0->DMACCConfig   |= GPDMA_CH_CONFIG_E;
 
@@ -70,4 +85,7 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 	{
 		__NOP();
 	}
+
+    // And clear our GPIO pin again
+    LPC_GPIO0->FIOCLR = (1u << 22);
 }

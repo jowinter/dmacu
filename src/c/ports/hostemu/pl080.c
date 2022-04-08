@@ -57,13 +57,13 @@ bool PL080_Channel_Process(PL080_Channel_t *ch)
 			{
 				printf("dma[copy]: critical warning: pl080 model only supports dwidth==swidth\n");
 			}
+#else
+			(void) swidth;
+			(void) dwidth;
 #endif
 
 			// Scale the size by our destination width (this likely produces strange effects if swidth != dwidth)
 			size *= dwidth;
-
-			if (swidth != 1)
-				printf ("dma[copy] %p -> %p size:%u dwidth:%u swidth:%u\n", (void *) src, (void *) dst, size, dwidth, swidth);
 
 			// Process any data to copy
 			uint32_t src_off = 0u;

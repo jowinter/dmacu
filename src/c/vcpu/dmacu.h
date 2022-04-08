@@ -286,6 +286,19 @@ extern void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu);
 // Hardware abstraction layer
 //
 
+/// \brief Static configuration of the hardware abstraction layer.
+typedef struct Hal_Config
+{
+    /// \brief Address of the GPIO output pin register
+    volatile uint32_t *gpio_pin_reg;
+
+    /// \brief GPIO bitmask for the LED
+    uint32_t gpio_led_mask;
+} Hal_Config_t;
+
+/// \brief Static HAL configuration (provided by the platform layer)
+extern const Hal_Config_t gHalConfig;
+
 /// \brief Initializes the hardware abstraction layer.
 ///
 /// \note This function must be provided by the platform specific port to initalize platform specific
