@@ -1440,20 +1440,30 @@ Cpu_Opcode_End(JmpImm16)
 //
 Cpu_Opcode_Begin(JmpReg16)
 	DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpReg16_2)
+	DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpJmpReg16_3)
 
 	// Copy rB:rA into lower 16 bits of CurrentOPC, then delegate to JmpImm16
 	Dma_FixedByteCopy(Cpu_OpJmpReg16_1,
-		&gCpu.CurrentOPC.Bytes[0u],
+		(Dma_PtrToAddr(&gCpu.NextPC)     + 0u),
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
 		1u,
 		&Cpu_OpJmpReg16_2
 	)
 
 	Dma_FixedByteCopy(Cpu_OpJmpReg16_2,
-		&gCpu.CurrentOPC.Bytes[1u],
+		(Dma_PtrToAddr(&gCpu.NextPC)     + 1u),
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
 		1u,
-		&Cpu_OpJmpImm16_1
+		&Cpu_OpJmpReg16_3
+	)
+
+	// Clip the upper 16 bit to the program base (this ensures module-16 behavior that is consistent
+	// with the normal program counter increments). Then resume at fetch stage.
+	Dma_FixedByteCopy(Cpu_OpJmpReg16_3,
+		(Dma_PtrToAddr(&gCpu.NextPC)      + 2u),
+		(Dma_PtrToAddr(&gCpu.ProgramBase) + 2u),
+		2u,
+		&Cpu_Writeback_PC
 	)
 Cpu_Opcode_End(JmpReg16)
 
