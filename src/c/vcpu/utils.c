@@ -54,12 +54,16 @@ static volatile uint8_t gTestRam[64u];
 //-----------------------------------------------------------------------------------------
 /// \brief Static test program
 ///
+
+#define LABEL_AT(x) [(x) / 4u] =
+
 DMACU_ALIGNED(0x1000)
 static const uint32_t gTestProgram[] =
 {
 	//-------------------------------------------------------------------------------------
 	// Part 1: Loop around a bit
 	//
+LABEL_AT(0x000)
 	UINT32_C(0x01000008), // +0x000 MOV r0,    0x08
 	UINT32_C(0x01010000), // +0x004 MOV r1,    0x00
 
@@ -79,6 +83,7 @@ static const uint32_t gTestProgram[] =
 	//-------------------------------------------------------------------------------------
 	// Part 2: Check for the 0xDE 0xAD 0xC0 0xDE pattern in r224-r227
 	//
+LABEL_AT(0x034)
 	UINT32_C(0x0CE0DE10), // +0x034 BNE (+0x10) r224, #0xDE
 	UINT32_C(0x0CE1AD0C), // +0x038 BNE (+0x0C) r224, #0xDE
 	UINT32_C(0x0CE2C008), // +0x03C BNE (+0x08) r224, #0xDE
@@ -93,6 +98,7 @@ static const uint32_t gTestProgram[] =
 	//   We assume that our data-RAM lies within a single 64k segment and that we can
 	//   use r255:r254:r17:r16 as source/destination pointer.
 	//
+LABEL_AT(0x048)
 	UINT32_C(0x0310FDFC), // +0x048 MOV2 r17:r16, r253:r252
 
 	// - Load the XOR "key" (0xC3) in r2, load our loop increment (1) in r1
@@ -106,25 +112,97 @@ static const uint32_t gTestProgram[] =
 	UINT32_C(0x11030302), // +0x058 EOR r3, r2, r2
 	UINT32_C(0x13030300), // +0x05C ROL r3, r3, #1
 
+	// - Blink-out the byte via our LED
+	UINT32_C(0x03222303),  // +0x060 MOV r34, r3         --> Parameter for our subroutine
+	UINT32_C(0x17200100),  // +0x064 JAL r33:32, #0x0100 --> Call the blink subroutine
+
 	// - Store the deobfuscated byte
-	UINT32_C(0x1A03FE10), // +0x060 STB r3, [r255:r254:r17:r16]
+	UINT32_C(0x1A03FE10),  // +0x068 STB r3, [r255:r254:r17:r16]
 
 	// - Stop if we have a NUL byte
-	UINT32_C(0x0D030014), // +0x064 BEQ (+0x14) r3, #0x0
+	UINT32_C(0x0D030014),  // +0x06C BEQ (+0x14) r3, #0x0
 
 	// Increment our 16-bit offset in r17:r16 and resume
-	UINT32_C(0x07041001), // +0x068 ACY r4,  r16, r1
-	UINT32_C(0x06101001), // +0x06C ADD r16, r16, r1
-	UINT32_C(0x06111104), // +0x070 ADD r17, r17, r4
-	UINT32_C(0x08000050), // +0x074 JMP #0x050
-
+	UINT32_C(0x07041001),  // +0x070 ACY r4,  r16, r1
+	UINT32_C(0x06101001),  // +0x074 ADD r16, r16, r1
+	UINT32_C(0x06111104),  // +0x078 ADD r17, r17, r4
+	UINT32_C(0x08000050),  // +0x07C JMP #0x054
 
 	//------------------------------------------------------------------------------------
 	// End of line :)
 	//
 
 	// And we are done
-	UINT32_C(0x1F656E64) // +0x078 UND #0x656E64
+	UINT32_C(0x1F656E64), // +0x080 UND #0x656E64
+
+	//------------------------------------------------------------------------------------
+	// Subroutine to "blink"-out the value in r34
+	//
+	// Input:
+	//   r34                  - The value to be "blinked out"
+	//   r33:r32              - Link register
+	//   r231:r230:r229:r228  - GPIO output pin register (preserved)
+	//   r235:r234:r233:r232  - GPIO output pin mask     (preserved)
+	//
+	// Temporary:
+	//   r35                  - Output bit position (clobbered)
+	//   r36                  - Tempory register    (clobbered)
+	//
+	//   r40:r39:r38:r37      - Used to construct the led mask
+	//   r44:r43:r42:r41      - Used to construct the led mask
+	//
+
+	// - Start clocking at the LSB
+LABEL_AT(0x100)
+	UINT32_C(0x01230001),   // +0x100 MOV r35, #0x01
+
+	// - Prepare the inverse LED mask in r40:r39:r38:r37
+	UINT32_C(0x0E25E800),   // +0x104 NOT r37, r232
+	UINT32_C(0x0E26E900),   // +0x108 NOT r38, r233
+	UINT32_C(0x0E27EA00),   // +0x10C NOT r39, r234
+	UINT32_C(0x0E28EB00),   // +0x110 NOT r40, r235
+
+	// - Extract the current bit into r36
+LABEL_AT(0x114)
+	UINT32_C(0x0F242223),   // +0x114 AND r36, r34, r35
+
+	// - Load the led status into r40:r39:r38:r37
+	UINT32_C(0x1D29E6E4),   // +0x118 LDW r44:r43:r42:r41, [r231:r230:r229:r228]
+
+	// - Set the led (if the current bit is 1)
+	UINT32_C(0x0D240018),   // +0x11C BEQ (+0x018) r36, #0x00
+	UINT32_C(0x102929E8),   // +0x120 OR  r41, r41, r232
+	UINT32_C(0x102A2AE9),   // +0x124 OR  r42, r42, r233
+	UINT32_C(0x102B2BEA),   // +0x128 OR  r43, r43, r234
+	UINT32_C(0x102C2CEB),   // +0x12C OR  r44, r44, r235
+	UINT32_C(0x08000148),   // +0x130 JMP #0x148
+
+	// - Clear the led (if the current bit is 0)
+	UINT32_C(0x0F292925),   // +0x134 AND  r41, r41, r37
+	UINT32_C(0x0F2A2A26),   // +0x138 AND  r42, r42, r38
+	UINT32_C(0x0F2B2B27),   // +0x13C AND  r43, r43, r39
+	UINT32_C(0x0F2C2C28),   // +0x140 AND  r44, r44, r40
+	UINT32_C(0x08000148),   // +0x144 JMP  #0x148
+
+	// - Write the new led status
+LABEL_AT(0x148)
+	UINT32_C(0x1E29E6E4),   // +0x148 STW r44:r43:r42:r41, [r231:r230:r229:r228]
+
+	// Inter-bit delay (for illustration)
+	UINT32_C(0x01240010),   // +0x14C MOV r36, #0x10
+
+LABEL_AT(0x150)
+	UINT32_C(0x0D24000C),   // +0x150 BEQ (+0x0C) r36, #0x00
+	UINT32_C(0x042424FF),   // +0x154 ADD r36, r36, #0xFF
+	UINT32_C(0x08000150),   // +0x158 JMP #0x150
+
+	// - Advance r35 to the next bit and loop
+	UINT32_C(0x0D23800C),   // +0x14C BEQ (+0x0C) r35, #0x80
+	UINT32_C(0x13232300),   // +0x150 ROL r35, r35, #1
+	UINT32_C(0x08000114),   // +0x154 JMP #0x114
+
+	// - Byte done, return to main
+	UINT32_C(0x09002120)    // +0x158 JMP r33:r32 (return)
 };
 
 //-----------------------------------------------------------------------------------------
@@ -158,6 +236,20 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[225u] = 0xADu;
 	cpu->RegFile[226u] = 0xC0u;
 	cpu->RegFile[227u] = 0xDEu;
+
+    // Pass the address of the GPIO output pin register (for LED output) in r231:r228
+    const Dma_UIntPtr_t gpio_pin_reg = Dma_PtrToAddr(gHalConfig.gpio_pin_reg);
+    cpu->RegFile[228u] = (uint8_t) (gpio_pin_reg & 0xFFu);
+	cpu->RegFile[229u] = (uint8_t) ((gpio_pin_reg >> 8u)  & 0xFFu);
+	cpu->RegFile[230u] = (uint8_t) ((gpio_pin_reg >> 16u) & 0xFFu);
+	cpu->RegFile[231u] = (uint8_t) ((gpio_pin_reg >> 24u) & 0xFFu);
+
+    // Pass the address of the GPIO LED mask (for LED output) in r235:r232
+    const Dma_UIntPtr_t gpio_led_mask = Dma_PtrToAddr(gHalConfig.gpio_led_mask);
+    cpu->RegFile[232u] = (uint8_t) (gpio_led_mask & 0xFFu);
+	cpu->RegFile[233u] = (uint8_t) ((gpio_led_mask >> 8u)  & 0xFFu);
+	cpu->RegFile[234u] = (uint8_t) ((gpio_led_mask >> 16u) & 0xFFu);
+	cpu->RegFile[235u] = (uint8_t) ((gpio_led_mask >> 24u) & 0xFFu);
 
 	// Pass the address of the code memory in registers r251:r248
 	//
