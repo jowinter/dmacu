@@ -1990,14 +1990,14 @@ Cpu_Opcode_Begin(StoreHalf)
 	Dma_FixedPatchDstLo16(Cpu_OpStoreHalf_1,
 		&Cpu_OpStoreHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
-		&Cpu_OpStoreByte_2
+		&Cpu_OpStoreHalf_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
 	Dma_FixedPatchDstHi16(Cpu_OpStoreHalf_2,
 		&Cpu_OpStoreHalf_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
-		&Cpu_OpStoreByte_3
+		&Cpu_OpStoreHalf_3
 	)
 
 	// Step 3: Perform the store operation (byte)
@@ -2025,21 +2025,21 @@ Cpu_Opcode_Begin(StoreWord)
 	Dma_FixedPatchDstLo16(Cpu_OpStoreWord_1,
 		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.A) + 0u),
-		&Cpu_OpStoreByte_2
+		&Cpu_OpStoreWord_2
 	)
 
 	// Step 2: Patch in the lower 16 bits of the destination address
 	Dma_FixedPatchDstHi16(Cpu_OpStoreWord_2,
 		&Cpu_OpStoreWord_3,
 		(Dma_PtrToAddr(&gCpu.Operands.B) + 0u),
-		&Cpu_OpStoreByte_3
+		&Cpu_OpStoreWord_3
 	)
 
 	// Step 3: Perform the store operation (byte)
 	Dma_WordCopy(Cpu_OpStoreWord_3,
 	    DMA_INVALID_ADDR,
 		(Dma_PtrToAddr(&gCpu.Operands.Z) + 0u),
-		1u,
+		4u,
 		&Cpu_Writeback_PC
 	)
 Cpu_Opcode_End(StoreWord)
