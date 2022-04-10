@@ -22,6 +22,11 @@
 # define DMACU_DUMP_ROM (1)
 #endif
 
+// Alignment of the RAM segment
+#if !defined(DMACU_RAM_ALIGNMENT)
+# define DMACU_RAM_ALIGNMENT (0x10000)
+#endif
+
 //-----------------------------------------------------------------------------------------
 ///  \brief Host scratch area (for read/write tests to host memory)
 ///
@@ -42,7 +47,7 @@ static const uint8_t gkTestMessage[] =
 };
 
 //-----------------------------------------------------------------------------------------
-DMACU_ALIGNED(0x10000)
+DMACU_ALIGNED(DMACU_RAM_ALIGNMENT)
 static volatile uint8_t gTestRam[256u];
 
 //-----------------------------------------------------------------------------------------
