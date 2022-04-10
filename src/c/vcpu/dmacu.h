@@ -289,18 +289,6 @@ extern void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu);
 /// \brief Static configuration of the hardware abstraction layer.
 typedef struct Hal_Config
 {
-    /// \brief Address of the GPIO output pin register
-    ///
-    /// \deprecated To be removed in favour of the platform_id approach (with platform handling in
-    ///   the firmware microcode).
-    volatile uint32_t *gpio_pin_reg;
-
-    /// \brief GPIO bitmask for the LED
-    ///
-    /// \deprecated To be removed in favour of the platform_id approach (with platform handling in
-    ///   the firmware microcode).
-    uint32_t gpio_led_mask;
-
     /// \brief HAL platform ID
     ///
     /// We pass this value in r247 to allow the microcode to adapt to the host platform.

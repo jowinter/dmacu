@@ -43,7 +43,7 @@ static const uint8_t gkTestMessage[] =
 
 //-----------------------------------------------------------------------------------------
 DMACU_ALIGNED(0x1000)
-static volatile uint8_t gTestRam[64u];
+static volatile uint8_t gTestRam[256u];
 
 //-----------------------------------------------------------------------------------------
 /// \brief Static test program
@@ -86,20 +86,6 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[225u] = 0xADu;
 	cpu->RegFile[226u] = 0xC0u;
 	cpu->RegFile[227u] = 0xDEu;
-
-    // Pass the address of the GPIO output pin register (for LED output) in r231:r228
-    const Dma_UIntPtr_t gpio_pin_reg = Dma_PtrToAddr(gHalConfig.gpio_pin_reg);
-    cpu->RegFile[228u] = (uint8_t) (gpio_pin_reg & 0xFFu);
-	cpu->RegFile[229u] = (uint8_t) ((gpio_pin_reg >> 8u)  & 0xFFu);
-	cpu->RegFile[230u] = (uint8_t) ((gpio_pin_reg >> 16u) & 0xFFu);
-	cpu->RegFile[231u] = (uint8_t) ((gpio_pin_reg >> 24u) & 0xFFu);
-
-    // Pass the address of the GPIO LED mask (for LED output) in r235:r232
-    const Dma_UIntPtr_t gpio_led_mask = Dma_PtrToAddr(gHalConfig.gpio_led_mask);
-    cpu->RegFile[232u] = (uint8_t) (gpio_led_mask & 0xFFu);
-	cpu->RegFile[233u] = (uint8_t) ((gpio_led_mask >> 8u)  & 0xFFu);
-	cpu->RegFile[234u] = (uint8_t) ((gpio_led_mask >> 16u) & 0xFFu);
-	cpu->RegFile[235u] = (uint8_t) ((gpio_led_mask >> 24u) & 0xFFu);
 
 	// Use r247 to pass a "platform-id" from the HAL layer
 	//

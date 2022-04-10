@@ -391,7 +391,7 @@ DMACU.INST.BRANCH.REL 0x0C, (\rZ), (\imm8), (\tgt)
  * +------+------+-------------+
  */
 .macro DMACU.LIT32 rZ, tgt
-	DMACU.OP1.IMM16 0x18, (\rZ), ((\tgt) - DMACU_Code)
+	DMACU.OP1.IMM16 0x18, (\rZ), ((\tgt) - .LDMACU_Code)
 .endm
 
 /*

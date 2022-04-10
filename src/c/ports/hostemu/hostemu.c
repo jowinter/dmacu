@@ -24,14 +24,8 @@
 //-------------------------------------------------------------------------------------------------
 // Dummy HAL configuration
 //
-
-#define GPIO_LED_MASK (1u)
-static volatile uint32_t gHalGpioLed = 0u;
-
 const Hal_Config_t gHalConfig =
 {
-    .gpio_pin_reg  = &gHalGpioLed,
-    .gpio_led_mask = GPIO_LED_MASK,
     .platform_id   = HAL_PLATFORM_HOST
 };
 

@@ -40,8 +40,6 @@
 
 const Hal_Config_t gHalConfig =
 {
-    .gpio_pin_reg  = &ARM_SYSCTL_REG(0x008),
-    .gpio_led_mask = GPIO_LED_MASK,
     .platform_id   = HAL_PLATFORM_QEMU
 };
 

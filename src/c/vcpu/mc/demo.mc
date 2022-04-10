@@ -47,11 +47,17 @@ DMACU.PROGRAM.BEGIN demo
 	.equ kExpectedMagic3, 0xDE
 
 	// Global register used for the LED blink output
-	.equ gLedGpioPin,    r228
-	.equ gLedGpioMask,   r232
+	.equ gLedGpioPin0,    r228
+	.equ gLedGpioPin1,    r229
+	.equ gLedGpioPin2,    r230
+	.equ gLedGpioPin3,    r231
+	.equ gLedGpioMask0,   r232
+	.equ gLedGpioMask1,   r233
+	.equ gLedGpioMask2,   r234
+	.equ gLedGpioMask3,   r235
 
 	// Platform ID register (r247)
-	.equ rPlatformId, r247
+	.equ rPlatformId,             r247
 	.set kHostPlatform,           0x00
 	.set kLpcXpresso1769Platform, 0x41
 	.set kQemuPlatform,           0x51
@@ -67,6 +73,43 @@ DMACU.PROGRAM.BEGIN demo
 	.equ gRamBase1,       r253
 	.equ gRamBase2,       r254
 	.equ gRamBase3,       r255
+
+	//-------------------------------------------------------------------------------------
+	// Part 0: Platform setup
+	//
+
+	// Platform check: Blink is currently supported on all platforms6
+	DMACU.BEQ      .Lsetup_host,           rPlatformId, kHostPlatform
+	DMACU.BEQ      .Lsetup_qemu,           rPlatformId, kQemuPlatform
+	DMACU.BEQ      .Lsetup_lpcxpresso1769, rPlatformId, kLpcXpresso1769Platform
+	DMACU.UND      0xEEEE
+
+	// Host platform (or other platform that does not support the blink)
+	//
+	// We let the blink logic run against the the word at offset 0xFC in
+	// the RAM. (We assume a 256 byte aligned RAM)
+.Lsetup_host:
+	DMACU.MOV.IMM8  gLedGpioPin0,  0xFC
+	DMACU.MOV2      gLedGpioPin0,  gRamBase1, gLedGpioPin0
+	DMACU.MOV2      gLedGpioPin2,  gRamBase3, gRamBase2
+	DMACU.MOV.IMM16 gLedGpioMask0, 0x0001
+	DMACU.MOV.IMM16 gLedGpioMask2, 0x0000
+	DMACU.JMP       1f
+
+.Lsetup_qemu:
+	// RealView System Control Block (and its LEDs register)
+	DMACU.MOV.IMM16 gLedGpioPin0,  0x0008 // PIN register @ 0x10000008
+	DMACU.MOV.IMM16 gLedGpioPin2,  0x1000 // -"-
+	DMACU.MOV.IMM16 gLedGpioMask0, 0x0001 // PIN mask is 0x00000001
+	DMACU.MOV.IMM16 gLedGpioMask2, 0x0000 // -"-
+	DMACU.JMP       1f
+
+.Lsetup_lpcxpresso1769:
+	DMACU.MOV.IMM16 gLedGpioPin0,  0xC014 // PIN register (LPC_GPIO0->FIOPIN) @ 0x2009C014
+	DMACU.MOV.IMM16 gLedGpioPin2,  0x2009 // -"-
+	DMACU.MOV.IMM16 gLedGpioMask0, 0x0000 // PIN mask is 0x0000040
+	DMACU.MOV.IMM16 gLedGpioMask2, 0x0040 // -"-
+	DMACU.JMP       1f
 
 	//-------------------------------------------------------------------------------------
 	// Part 1: Loop around a bit
@@ -150,46 +193,40 @@ DMACU.PROGRAM.BEGIN demo
 	// Input:
 	//   r34                  - The value to be "blinked out"
 	//   r33:r32              - Link register
-	//   r231:r230:r229:r228  - GPIO output pin register (preserved)
-	//   r235:r234:r233:r232  - GPIO output pin mask     (preserved)
 	//
 	// Temporary:
 	//   r35                  - Output bit position (clobbered)
 	//   r36                  - Tempory register    (clobbered)
 	//
+	//   r231:r230:r229:r228  - GPIO output pin register (clobbered)
+	//   r235:r234:r233:r232  - GPIO output pin mask     (clobbered)
+	//
 	//   r40:r39:r38:r37      - Used to construct the led mask
 	//   r44:r43:r42:r41      - Used to construct the led mask
 	//
 
-	// - Start clocking at the LSB
 blink_led:
-	// Platform check: Blink is currently supported on all platforms
-	DMACU.BEQ      blink_led_common, rPlatformId, kHostPlatform
-	DMACU.BEQ      blink_led_common, rPlatformId, kQemuPlatform
-	DMACU.BEQ      blink_led_common, rPlatformId, kLpcXpresso1769Platform
-	DMACU.RET      r32
-
-blink_led_common:
+	// - Start clocking at the LSB
 	DMACU.MOV.IMM8 r35, 0x01
 
 	// - Prepare the inverse LED mask in r40:r39:r38:r37
-	DMACU.NOT      r37, r232
-	DMACU.NOT      r38, r233
-	DMACU.NOT      r39, r234
-	DMACU.NOT      r40, r235
+	DMACU.NOT      r37, gLedGpioMask0
+	DMACU.NOT      r38, gLedGpioMask1
+	DMACU.NOT      r39, gLedGpioMask2
+	DMACU.NOT      r40, gLedGpioMask3
 
 	// - Extract the current bit into r36
 9:	DMACU.AND      r36, r34,  r35
 
-	// - Load the led status into r40:r39:r38:r37
-	DMACU.LDW      r41, r230, r228
+	// - Load the led status into r44:r43:r42:r41
+	DMACU.LDW      r41, gLedGpioPin2, gLedGpioPin0
 
 	// - Set the led (if the current bit is 1)
-	DMACU.BEQ      10f, r36,  0x00
-	DMACU.OR       r41, r41, r232
-	DMACU.OR       r42, r42, r233
-	DMACU.OR       r43, r43, r234
-	DMACU.OR       r44, r44, r235
+	DMACU.BEQ      10f, r36, 0x00
+	DMACU.OR       r41, r41, gLedGpioMask0
+	DMACU.OR       r42, r42, gLedGpioMask1
+	DMACU.OR       r43, r43, gLedGpioMask2
+	DMACU.OR       r44, r44, gLedGpioMask3
 	DMACU.JMP      11f
 
 	// - Clear the led (if the current bit is 0)
@@ -200,17 +237,17 @@ blink_led_common:
 	DMACU.JMP      11f
 
 	// - Write the new led status
-11:	DMACU.STW      r41, r230, r228
+11:	DMACU.STW      r41, gLedGpioPin2, gLedGpioPin0
 
 	// Inter-bit delay (for illustration)
-	DMACU.MOV.IMM8 r36, 0x80
+	DMACU.MOV.IMM8 r36, 0x40
 
 12:	DMACU.BEQ      13f, r36, 0x00
 	DMACU.ADD.IMM8 r36, r36, 0xFF
 	DMACU.JMP      12b
 
 	// - Advance r35 to the next bit and loop
-13:	DMACU.BEQ      14f, r35, 0x80
+13: DMACU.BEQ      14f, r35, 0x80
 	DMACU.ROL1     r35, r35
 	DMACU.JMP      9b
 
