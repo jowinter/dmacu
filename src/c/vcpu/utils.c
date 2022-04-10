@@ -35,7 +35,7 @@
 //-----------------------------------------------------------------------------------------
 // Reference test message (obfuscated)
 //
-static volatile const uint8_t gkTestMessage[] =
+static const uint8_t gkTestMessage[] =
 {
 	// Source the generated microcode data for the demo
 #	include "mc/demo.data.inc"
