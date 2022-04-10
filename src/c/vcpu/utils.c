@@ -101,6 +101,12 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[234u] = (uint8_t) ((gpio_led_mask >> 16u) & 0xFFu);
 	cpu->RegFile[235u] = (uint8_t) ((gpio_led_mask >> 24u) & 0xFFu);
 
+	// Use r247 to pass a "platform-id" from the HAL layer
+	//
+	// This allows us to have some platform specific logic (e.g. PL011 UART output
+	// on QEMU) in the microcode.
+	cpu->RegFile[247u] = (uint8_t) gHalConfig.platform_id;
+
 	// Pass the address of the code memory in registers r251:r248
 	//
 	// currently unused, but this opens up space for self-modifying code shenanigans ;)

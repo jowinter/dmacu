@@ -37,7 +37,8 @@
 const Hal_Config_t gHalConfig =
 {
     .gpio_pin_reg  = &LPC_GPIO0->FIOPIN,
-    .gpio_led_mask = GPIO_LED_MASK
+    .gpio_led_mask = GPIO_LED_MASK,
+    .platform_id   = HAL_PLATFORM_LPCXPRESSO_1769
 };
 
 //-------------------------------------------------------------------------------------------------

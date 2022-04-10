@@ -290,11 +290,36 @@ extern void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu);
 typedef struct Hal_Config
 {
     /// \brief Address of the GPIO output pin register
+    ///
+    /// \deprecated To be removed in favour of the platform_id approach (with platform handling in
+    ///   the firmware microcode).
     volatile uint32_t *gpio_pin_reg;
 
     /// \brief GPIO bitmask for the LED
+    ///
+    /// \deprecated To be removed in favour of the platform_id approach (with platform handling in
+    ///   the firmware microcode).
     uint32_t gpio_led_mask;
+
+    /// \brief HAL platform ID
+    ///
+    /// We pass this value in r247 to allow the microcode to adapt to the host platform.
+    /// Currently the following platform IDs are in use:
+    ///
+    /// - 0x00 ('\0') Host-based simulation
+    /// - 0x41 ('A')  LPCxpresso LPC1769 (or compatible) board.
+    /// - 0x51 ('Q')  QEMU simulating a versatilepb board.
+    uint8_t platform_id;
 } Hal_Config_t;
+
+/// \brief Virtual "host" simulation platform.
+#define HAL_PLATFORM_HOST UINT8_C(0x00)
+
+/// \brief LPCxpress LPC1769 (or compatible) board.
+#define HAL_PLATFORM_LPCXPRESSO_1769 UINT8_C(0x41)
+
+/// \brief QEMU simulating a versatilepb board.
+#define HAL_PLATFORM_QEMU UINT8_C(0x51)
 
 /// \brief Static HAL configuration (provided by the platform layer)
 extern const Hal_Config_t gHalConfig;
