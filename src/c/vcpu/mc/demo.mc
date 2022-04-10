@@ -159,7 +159,7 @@ blink_led:
 11:	DMACU.STW      r41, r230, r228
 
 	// Inter-bit delay (for illustration)
-	DMACU.MOV.IMM8 r36, 0x10
+	DMACU.MOV.IMM8 r36, 0x80
 
 12:	DMACU.BEQ      13f, r36, 0x00
 	DMACU.ADD.IMM8 r36, r36, 0xFF
