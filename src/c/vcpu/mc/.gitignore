@@ -1,0 +1,4 @@
+# Ignore intermediate microcode build outputs
+# (we keep the source files and the final include files with the program/data blobs)
+*.bin
+*.o

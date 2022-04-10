@@ -421,6 +421,21 @@
           </Files>
         </Group>
         <Group>
+          <GroupName>mc</GroupName>
+          <Files>
+            <File>
+              <FileName>demo.code.inc</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\vcpu\mc\demo.code.inc</FilePath>
+            </File>
+            <File>
+              <FileName>demo.data.inc</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\vcpu\mc\demo.data.inc</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>::CMSIS</GroupName>
         </Group>
         <Group>

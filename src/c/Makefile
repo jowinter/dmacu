@@ -28,6 +28,7 @@ CROSS_PREFIX   := arm-none-eabi-
 CROSS_CC       := $(CROSS_PREFIX)gcc
 CROSS_AS       := $(CROSS_PREFIX)gcc -x assembler-with-cpp
 CROSS_LD       := $(CROSS_PREFIX)gcc
+CROSS_OBJCOPY  := $(CROSS_PREFIX)objcopy
 
 CROSS_CPUFLAGS := -mcpu=arm926ej-s
 CROSS_CPPFLAGS := -I./vcpu/
@@ -41,6 +42,29 @@ C_SOURCES      += ./ports/qemu/versatile.c
 
 EXECUTABLE     := dmacu.elf
 OBJECTS        := $(C_SOURCES:%.c=%.o)
+
+#--------------------------------------------------------------------------------------------------
+# Compilation of microcode files
+#
+
+MC_AS           := $(CROSS_AS)
+MC_ASFLAGS      := -nostartfiles -nodefaultlibs -I ./vcpu/mc/ -Ttext=0x00000000 -e 0x00000000
+MC_OBJCOPY      := $(CROSS_OBJCOPY)
+MC_OCFLAGS_CODE := -Obinary -j .microcode.program
+MC_OCFLAGS_DATA := -Obinary -j .microcode.data
+
+# Source files for microcode compilation
+MC_SOURCES     := ./vcpu/mc/demo.mc
+
+# Raw object files resulting from microcode compilation
+MC_OBJECTS     := $(MC_SOURCES:%.mc=%.o)
+
+# Raw binaries for microcode program and data images
+MC_BINARIES    := $(MC_OBJECTS:%.o=%.code.bin) # Code segment images
+MC_BINARIES    += $(MC_OBJECTS:%.o=%.data.bin) # Data segment images
+
+# Raw microcode program and data images prepared for inclusion in C initializers
+MC_INCS        := $(MC_BINARIES:%.bin=%.inc)
 
 #--------------------------------------------------------------------------------------------------
 # Compilation on the host (via clang)
@@ -66,6 +90,7 @@ all: $(EXECUTABLE) $(HOST_EXECUTABLE)
 # Cleanup
 clean:
 	rm -f $(HOST_EXECUTABLE) $(EXECUTABLE) $(OBJECTS)
+	rm -f $(MC_INCS) $(MC_BINARIES) $(MC_OBJECTS)
 
 # Build the target image and call-out to QEMU
 sim: $(EXECUTABLE)
@@ -84,5 +109,36 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CROSS_CC) $(CROSS_CFLAGS) -o $@ -c $<
 
 # Compile and link the hostemu target
-$(HOST_EXECUTABLE): $(HOST_C_SOURCES)
+$(HOST_EXECUTABLE): $(HOST_C_SOURCES) $(MC_INCS)
 	$(HOST_CC) -o $@ $(HOST_CFLAGS) $(HOST_C_SOURCES)
+
+# Explicitly declare the dependecy for utils.o (test program)
+vcpu/utils.o: $(MC_INCS)
+
+#--------------------------------------------------------------------------------------------------
+# Build the microcode
+#
+microcode: $(MC_INCS)
+
+# Compile a microcode program (into a binary file)
+#
+# We use a two step approach:
+# 1. Compile+link an assembler program (at address 0)
+# 2. Extract a binary image (via objcopy)
+#
+%.o: %.mc
+	$(MC_AS) -o $@ $(MC_ASFLAGS) $<
+
+# Extract the code segment
+%.code.bin: %.o
+	$(MC_OBJCOPY) $(MC_OCFLAGS_CODE) $< $@
+
+# Extract the data segment
+%.data.bin: %.o
+	$(MC_OBJCOPY) $(MC_OCFLAGS_DATA) $< $@
+
+# Prepare for inclusion in C source code
+#
+# We use the output of "xxd -i" bar the header/footer lines that are added by the tool
+%.inc: %.bin
+	xxd -i $< | head --lines=-2 | tail --lines=+2 > $@
