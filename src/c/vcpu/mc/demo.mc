@@ -24,9 +24,9 @@
 //
 DMACU.DATA.BEGIN    demo
  	// Reference test message (obfuscated)
-	.irp  c,'H','e','l','o',' ','b','r','a','v','e',' ','n','e','w',' ', \
-	        'P','L','0','8',' ','D','M','A',' ','w','o','r','l','d','!', \
-	        0x0A,0x00
+	.irp  c,'H','e','l','l','o',' ','b','r','a','v','e',' ','n','e','w', \
+            ' ','P','L','0','8','0',' ','D','M','A',' ','w','o','r','l', \
+	        'd','!', 0x0A,0x00
 		obf_byte \c
 	.endr
 DMACU.DATA.END      demo
@@ -35,6 +35,39 @@ DMACU.DATA.END      demo
 // Code segment for the demo program
 //
 DMACU.PROGRAM.BEGIN demo
+	// Alias for the host marker registers
+	.equ rMagic0, r224
+	.equ rMagic1, r225
+	.equ rMagic2, r226
+	.equ rMagic3, r227
+
+	.equ kExpectedMagic0, 0xDE
+	.equ kExpectedMagic1, 0xAD
+	.equ kExpectedMagic2, 0xC0
+	.equ kExpectedMagic3, 0xDE
+
+	// Global register used for the LED blink output
+	.equ gLedGpioPin,    r228
+	.equ gLedGpioMask,   r232
+
+	// Platform ID register (r247)
+	.equ rPlatformId, r247
+	.set kHostPlatform,           0x00
+	.set kLpcXpresso1769Platform, 0x41
+	.set kQemuPlatform,           0x51
+
+	// Code base address
+	.equ gCodeBase0,      r248
+	.equ gCodeBase0,      r249
+	.equ gCodeBase0,      r250
+	.equ gCodeBase0,      r251
+
+	// Ram base address
+	.equ gRamBase0,       r252
+	.equ gRamBase1,       r253
+	.equ gRamBase2,       r254
+	.equ gRamBase3,       r255
+
 	//-------------------------------------------------------------------------------------
 	// Part 1: Loop around a bit
 	//
@@ -57,10 +90,10 @@ DMACU.PROGRAM.BEGIN demo
 	//-------------------------------------------------------------------------------------
 	// Part 2: Check for the 0xDE 0xAD 0xC60 0xDE pattern in r224-r227
 	//
-4:	DMACU.BNE      5f, r224, 0xDE
-	DMACU.BNE      5f, r225, 0xAD
-	DMACU.BNE      5f, r226, 0xC0
-	DMACU.BEQ      6f, r227, 0xDE
+4:	DMACU.BNE      5f, rMagic0, kExpectedMagic0
+	DMACU.BNE      5f, rMagic1, kExpectedMagic1
+	DMACU.BNE      5f, rMagic2, kExpectedMagic2
+	DMACU.BEQ      6f, rMagic3, kExpectedMagic3
 5:	DMACU.UND      0xE001
 
 	// ------------------------------------------------------------------------------------
@@ -71,25 +104,29 @@ DMACU.PROGRAM.BEGIN demo
 	//   We assume that our data-RAM lies within a single 64k segment and that we can
 	//   use r255:r254:r17:r16 as source/destination pointer.
 	//
-6:	DMACU.MOV2     r16, r253, r252
+6:	DMACU.MOV2     r16, gRamBase0, gRamBase1
 
 	// - Load the XOR "key" (0xC3) in r2, load our loop increment (1) in r1
 	DMACU.MOV.IMM8 r1, 0x01
 	DMACU.MOV.IMM8 r2, 0xC3
 
 	// - Load the current byte into r3
-7:	DMACU.LDB      r3, r254, r16
+7:	DMACU.LDB      r3, gRamBase2, r16
 
 	// - Deobfuscate (step 1) be XOR'ing with 0x5A, followed by a rotate left by 1
 	DMACU.EOR      r3, r3, r2
 	DMACU.ROL1     r3, r3
 
-	// - Blink-out the byte via our LED
+	// - Send a byte to the PL011 UART	(currently only supported on QEMU)
+	DMACU.MOV      r34, r3        // --> Parameter for our subroutine
+	DMACU.JAL      r32, uart_putchar
+
+	// - Blink-out the byte via our LED (on all platforms)
 	DMACU.MOV      r34, r3        // --> Parameter for our subroutine
 	DMACU.JAL      r32, blink_led // --> Call the blink subroutine
 
 	// - Store the deobfuscated byte
-	DMACU.STB      r3, r254, r16
+	DMACU.STB      r3, gRamBase2, r16
 
 	// - Stop if we have a NUL byte
 	DMACU.BEQ      8f, r3, 0
@@ -126,6 +163,13 @@ DMACU.PROGRAM.BEGIN demo
 
 	// - Start clocking at the LSB
 blink_led:
+	// Platform check: Blink is currently supported on all platforms
+	DMACU.BEQ      blink_led_common, rPlatformId, kHostPlatform
+	DMACU.BEQ      blink_led_common, rPlatformId, kQemuPlatform
+	DMACU.BEQ      blink_led_common, rPlatformId, kLpcXpresso1769Platform
+	DMACU.RET      r32
+
+blink_led_common:
 	DMACU.MOV.IMM8 r35, 0x01
 
 	// - Prepare the inverse LED mask in r40:r39:r38:r37
@@ -172,4 +216,48 @@ blink_led:
 
 	// - Byte done, return to main
 14:	DMACU.RET      r32
+
+	//------------------------------------------------------------------------------------
+	// Subroutine to print a single character (in r34) to QEMU's PL011 UART
+	//
+	// Input:
+	//   r34                  - The byte to be sent (preserved)
+	//   r33:r32              - Link register
+	//
+	// Temporary:
+	//   r36:r35              - Peripheral base for the UART      (0x101F____)
+	//   r38:r37              - Offset of the PL011 data register (0x____1000)
+	//   r40:r39              - Offset of the PL011 flag register (0x____1018)
+	//   r44:r43:r42:r41      - Scratchpad for PL011 register reads/writes
+	//   r45                  - Mask for the UART ready flag
+	//
+	.equ kPeriphBase,      r35
+	.equ kUartDataReg,     r37
+	.equ kUartFlagReg,     r39
+	.equ rUartTemp,        r41
+	.equ kUartTxReadyFlag, r45
+
+uart_putchar:
+	// Platform check: Use the PL011 UART on QEMU
+	DMACU.BEQ       uart_putchar_qemu, rPlatformId, kQemuPlatform
+
+	// All other platforms: Ignore
+	DMACU.RET       r32
+
+	// Setup
+uart_putchar_qemu:
+	DMACU.MOV.IMM16 kPeriphBase,      0x101F
+	DMACU.MOV.IMM16 kUartDataReg,     0x1000
+	DMACU.MOV.IMM16 kUartFlagReg,     0x1018
+	DMACU.MOV.IMM8  kUartTxReadyFlag, 0x80
+
+	// Wait until the UART is ready to transmit
+uart_putchar_qemu_wait_for_tx_ready:
+    DMACU.LDW       rUartTemp, kPeriphBase, kUartFlagReg
+	DMACU.AND       rUartTemp, rUartTemp,   kUartTxReadyFlag
+	DMACU.BEQ       uart_putchar_qemu_wait_for_tx_ready, rUartTemp, 0x00
+
+	// Send one byte and return
+    DMACU.STB       r34, kPeriphBase, kUartDataReg
+	DMACU.RET       r32
 DMACU.PROGRAM.END   demo
