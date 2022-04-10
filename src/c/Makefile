@@ -40,7 +40,7 @@ CROSS_LIBS     :=
 C_SOURCES      := $(COMMON_C_SOURCES)
 C_SOURCES      += ./ports/qemu/versatile.c
 
-EXECUTABLE     := dmacu.elf
+EXECUTABLE     := dmacu_qemu_versatilepb.elf
 OBJECTS        := $(C_SOURCES:%.c=%.o)
 
 #--------------------------------------------------------------------------------------------------

@@ -25,5 +25,5 @@ jobs:
     - name: Archive build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: build-artifacts
-        path: src/c/dmacu.elf
+        name: dmacu-qemu
+        path: src/c/dmacu_qemu_versatilepb.elf
