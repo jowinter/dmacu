@@ -20,7 +20,7 @@ jobs:
         release: '10-2020-q4'
     
     - name: Build QEMU simulation target
-      run: make -C src/c/ dmacu.elf
+      run: make -C src/c/ dmacu_qemu_versatilepb.elf
 
     - name: Archive build artifacts
       uses: actions/upload-artifact@v3
