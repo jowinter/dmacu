@@ -1,7 +1,7 @@
 /*
  * Minimal CPU Emulator Powered by the ARM PL080 DMA Controller (dmacu)
  *
- * Copyright (c) 2019-2022 Johannes Winter <jrandom
+ * Copyright (c) 2019-2022 Johannes Winter <jrandom@speed.at>
  *
  * This file is licensed under the MIT License. See LICENSE in the root directory
  * of the prohect for the license text.
