@@ -16,6 +16,11 @@ COMMON_C_SOURCES := ./vcpu/dmacu.c
 COMMON_C_SOURCES += ./vcpu/rt.c
 COMMON_C_SOURCES += ./vcpu/utils.c
 
+# Enable experimental "virtual PL080" mode (if DMACU_VIRTUAL_PL080=1 is given as make parameter)
+ifeq ($(DMACU_VIRTUAL_PL080),1)
+COMMON_CPPFLAGS += -DDMACU_VIRTUAL_PL080=1
+endif
+
 #--------------------------------------------------------------------------------------------------
 # Compilation to an ARM target (via an arm-none-eabi toolchain)
 #
@@ -55,6 +60,7 @@ MC_OCFLAGS_DATA := -Obinary -j .microcode.data
 
 # Source files for microcode compilation
 MC_SOURCES     := ./vcpu/mc/demo.mc
+MC_SOURCES     += ./vcpu/mc/pl080.mc
 
 # Raw object files resulting from microcode compilation
 MC_OBJECTS     := $(MC_SOURCES:%.mc=%.o)

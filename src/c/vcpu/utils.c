@@ -27,6 +27,11 @@
 # define DMACU_RAM_ALIGNMENT (0x10000)
 #endif
 
+// Virtual PL080 mode (work in progress)
+#if !defined(DMACU_VIRTUAL_PL080)
+# define DMACU_VIRTUAL_PL080 (0)
+#endif
+
 //-----------------------------------------------------------------------------------------
 ///  \brief Host scratch area (for read/write tests to host memory)
 ///
@@ -61,14 +66,41 @@ static const uint8_t gTestProgram[] =
 };
 
 //-----------------------------------------------------------------------------------------
+//
+// Proof-of-Concept demo for the "virtual" PL080 (work in progress)
+//
+#if (DMACU_VIRTUAL_PL080 != 0)
+/// \brief Microcode of the virtual PL080
+DMACU_ALIGNED(0x1000)
+static const uint8_t gVPL080Code[] =
+{
+	// Source the generated microcode program for the demo
+#	include "mc/pl080.code.inc"
+};
+
+/// \brief Hello-world test message
+static const char gkVPL080Hello[] = "simulation hypothesis? ... to be proven! (in a pl080 world) ;)";
+
+/// \brief Initial descriptor for the virtual PL080
+static Dma_Descriptor_t gVPL080BootstrapDescriptor;
+#endif
+
+//-----------------------------------------------------------------------------------------
 void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 {
 	// Clear the CPU structure
 	memset(cpu, 0, sizeof(Dmacu_Cpu_t));
 
 	// Setup the initial program counter
-	cpu->PC = (uint32_t) &gTestProgram[0];
-	cpu->ProgramBase = cpu->PC;
+#if (DMACU_VIRTUAL_PL080 != 0)
+	// Virtual PL080 mode
+	cpu->ProgramBase = (uint32_t) &gVPL080Code[0u];
+#else
+	// Freestanding mode (execute from flash)
+	cpu->ProgramBase = (uint32_t) &gTestProgram[0u];
+#endif
+
+	cpu->PC = cpu->ProgramBase;
 
 	// Fill the register file with a test pattern
 	//
@@ -92,6 +124,25 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[226u] = 0xC0u;
 	cpu->RegFile[227u] = 0xDEu;
 
+#if (DMACU_VIRTUAL_PL080 != 0)
+	// (work in progress)
+	// Use r246:r245:r244:r243 to pass the initial DMA descriptor for the (inner) virtual PL080
+	const Dma_UIntPtr_t virt_pl080_bootstrap_descriptor = Dma_PtrToAddr(&gVPL080BootstrapDescriptor);
+	cpu->RegFile[243u] = (uint8_t) (virt_pl080_bootstrap_descriptor & 0xFFu);
+	cpu->RegFile[244u] = (uint8_t) ((virt_pl080_bootstrap_descriptor >> 8u)  & 0xFFu);
+	cpu->RegFile[245u] = (uint8_t) ((virt_pl080_bootstrap_descriptor >> 16u) & 0xFFu);
+	cpu->RegFile[246u] = (uint8_t) ((virt_pl080_bootstrap_descriptor >> 24u) & 0xFFu);
+
+	gVPL080BootstrapDescriptor = (Dma_Descriptor_t)
+	{
+		.src  = Dma_PtrToAddr(&gkVPL080Hello[0u]),
+		.dst  = Dma_PtrToAddr(&gTestRam[0u]),
+		.lli  = UINT32_C(0),
+		.ctrl = UINT32_C(0x0C000000) + sizeof(gkVPL080Hello)
+	};
+
+#endif
+
 	// Use r247 to pass a "platform-id" from the HAL layer
 	//
 	// This allows us to have some platform specific logic (e.g. PL011 UART output
@@ -101,7 +152,7 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	// Pass the address of the code memory in registers r251:r248
 	//
 	// currently unused, but this opens up space for self-modifying code shenanigans ;)
-	const Dma_UIntPtr_t rom_base = Dma_PtrToAddr(&gTestProgram[0u]);
+	const Dma_UIntPtr_t rom_base = Dma_PtrToAddr(cpu->ProgramBase);
 	cpu->RegFile[248u] = (uint8_t) (rom_base & 0xFFu);
 	cpu->RegFile[249u] = (uint8_t) ((rom_base >> 8u)  & 0xFFu);
 	cpu->RegFile[250u] = (uint8_t) ((rom_base >> 16u) & 0xFFu);
@@ -176,7 +227,7 @@ void Dmacu_DumpCpuState(const char *prefix, const Dmacu_Cpu_t *cpu)
 #if !DMACU_QUIET
 	printf("%s        PC: %08X  NextPC: %08X Base: %08X\n"
 		"%s       OPC: %08X\n"
-		"%s        rA: %04X  rB: %04X  rZ: %04X\n",
+		"%s        rA: %08X  rB: %08X  rZ: %08X\n",
 	    prefix, (unsigned) cpu->PC, (unsigned) cpu->NextPC, (unsigned) cpu->ProgramBase,
 		prefix, (unsigned) cpu->CurrentOPC.Value,
 		prefix, (unsigned) cpu->Operands.A,
