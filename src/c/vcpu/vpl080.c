@@ -43,5 +43,6 @@ void Dmacu_SetupVirtualPL080(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[246u] = (uint8_t) ((slave_cpu_boot_descriptor >> 24u) & 0xFFu);
 
 	// Finally initialize the slave CPU
-	Dmacu_SetupTestProgram(SlaveCpu_GetCpu());
+	Dmacu_Cpu_t *const slave = SlaveCpu_GetCpu();
+	Dmacu_SetupTestProgram(slave);
 }

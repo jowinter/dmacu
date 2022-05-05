@@ -29,7 +29,12 @@
 
 // Virtual PL080 mode (work in progress)
 #if !defined(DMACU_VIRTUAL_PL080)
-# define DMACU_VIRTUAL_PL080 (0)
+# define DMACU_VIRTUAL_PL080 (1)
+#endif
+
+#if (DMACU_VIRTUAL_PL080 != 0)
+// Slave CPU (running the actual program)
+extern Dmacu_Cpu_t *SlaveCpu_GetCpu(void);
 #endif
 
 //-----------------------------------------------------------------------------------------
@@ -141,6 +146,10 @@ void Dmacu_RunTestProgram(void)
 	// Dump the initial CPU state (after test program setup)
 #if !DMACU_QUIET
 	Dmacu_DumpCpuState("vcpu[init]", cpu);
+
+#if (DMACU_VIRTUAL_PL080 != 0)
+	Dmacu_DumpCpuState("vcpu[slave:init]", SlaveCpu_GetCpu());
+#endif
 #endif
 
 	// And run the DMA transfer for the test program
@@ -150,6 +159,10 @@ void Dmacu_RunTestProgram(void)
 	// Dump the virtual CPU state on exit.
 	printf("vcpu[run] dma transfers done (virtual cpu is stopped)\n");
 	Dmacu_DumpCpuState("vcpu[exit]", cpu);
+
+#if (DMACU_VIRTUAL_PL080 != 0)
+	Dmacu_DumpCpuState("vcpu[slave:exit]", SlaveCpu_GetCpu());
+#endif
 #endif
 
 	// I am feeling lucky :)
