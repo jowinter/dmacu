@@ -218,6 +218,9 @@ DMACU.PROGRAM.BEGIN demo
 	//
 
 blink_led:
+	// DEBUG: Skip on non-hw platforms (for performance)
+	DMACU.BNE 14f, rPlatformId, kLpcXpresso1769Platform
+
 	// - Start clocking at the LSB
 	DMACU.MOV.IMM8 r35, 0x01
 
