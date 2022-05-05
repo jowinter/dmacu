@@ -26,6 +26,16 @@
 # define DMA_INSTANCE_PREFIX Dmacu
 #endif
 
+// Alignment of the RAM segment
+#if !defined(DMACU_RAM_ALIGNMENT)
+# define DMACU_RAM_ALIGNMENT (0x10000)
+#endif
+
+// Alignment of the ROM segment
+#if !defined(DMACU_ROM_ALIGNMENT)
+# define DMACU_ROM_ALIGNMENT (0x10000)
+#endif
+
 //-------------------------------------------------------------------------------------------------
 // Basic DMA descriptors (PL080)
 //

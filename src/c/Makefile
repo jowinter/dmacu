@@ -84,7 +84,7 @@ MC_INCS        := $(MC_BINARIES:%.bin=%.inc)
 # with qemu-i386 running on WSL. This might cause bugs ...
 #
 HOST_CC        := clang
-HOST_CPUFLAGS  := -m32 -DDMACU_RAM_ALIGNMENT=0x1000
+HOST_CPUFLAGS  := -m32 -DDMACU_RAM_ALIGNMENT=0x1000 -DDMACU_ROM_ALIGNMENT=0x1000
 HOST_OPTFLAGS  := -g -O1 -flto
 HOST_CFLAGS    := $(HOST_CPUFLAGS) $(COMMON_CPPFLAGS) -Wall -std=c99 -pedantic $(HOST_OPTFLAGS)
 

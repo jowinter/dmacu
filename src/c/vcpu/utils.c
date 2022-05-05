@@ -17,24 +17,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if (DMACU_VIRTUAL_PL080 != 0)
+// Slave CPU (running the actual program)
+extern Dmacu_Cpu_t *SlaveCpu_GetCpu(void);
+#endif
+
 // Enable dumping of the ROM on Dmacu_DumpCpuState
 #if !defined(DMACU_DUMP_ROM)
 # define DMACU_DUMP_ROM (1)
 #endif
 
-// Alignment of the RAM segment
-#if !defined(DMACU_RAM_ALIGNMENT)
-# define DMACU_RAM_ALIGNMENT (0x10000)
-#endif
-
 // Virtual PL080 mode (work in progress)
 #if !defined(DMACU_VIRTUAL_PL080)
 # define DMACU_VIRTUAL_PL080 (0)
-#endif
-
-#if (DMACU_VIRTUAL_PL080 != 0)
-// Slave CPU (running the actual program)
-extern Dmacu_Cpu_t *SlaveCpu_GetCpu(void);
 #endif
 
 //-----------------------------------------------------------------------------------------
@@ -63,7 +58,7 @@ static volatile uint8_t gTestRam[256u];
 //-----------------------------------------------------------------------------------------
 /// \brief Static test program
 ///
-DMACU_ALIGNED(0x1000)
+DMACU_ALIGNED(DMACU_ROM_ALIGNMENT)
 static const uint8_t gTestProgram[] =
 {
 	// Source the generated microcode program for the demo

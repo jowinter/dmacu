@@ -18,7 +18,7 @@
 #include "dmacu_instance.c" // Slave CPU (driven be the virtual PL080 running on the primary CPU)
 
 /// \brief Microcode of the virtual PL080
-DMACU_ALIGNED(0x1000)
+DMACU_ALIGNED(DMACU_ROM_ALIGNMENT)
 static const uint8_t gVirtualPL080Code[] =
 {
 	// Source the generated microcode program for the demo
