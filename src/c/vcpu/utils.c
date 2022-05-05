@@ -29,7 +29,7 @@
 
 // Virtual PL080 mode (work in progress)
 #if !defined(DMACU_VIRTUAL_PL080)
-# define DMACU_VIRTUAL_PL080 (1)
+# define DMACU_VIRTUAL_PL080 (0)
 #endif
 
 #if (DMACU_VIRTUAL_PL080 != 0)
