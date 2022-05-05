@@ -9,7 +9,7 @@
 
 /**
  * @file dmacu.h
- * @brief Virtual CPU emulator core (PL080 backend)
+ * @brief Virtual CPU emulator core (PL080 backend; common data)
  */
 #ifndef DMACU_H_
 #define DMACU_H_ 1
@@ -84,116 +84,6 @@ typedef struct Dma_Descriptor
 #define DMA_INVALID_ADDR Dma_PtrToAddr(NULL)
 
 //-------------------------------------------------------------------------------------------------
-// Basic DMA descriptors (PL080)
-//
-
-/// \brief Defines an externally visible DMA descriptor
-#define Dma_Define_Descriptor(_self,...) \
-    DMACU_ALIGNED(16u) \
-    DMACU_PRIVATE Dma_Descriptor_t _self = { __VA_ARGS__ };
-
-/// \brief Constructs the name of a local descriptor or object.
-#define Dma_Local_Name(_self,_suffix) \
-    _self##_##_suffix
-
-/// \brief (Re-)declares an externally visible DMA descriptor
-#define Dma_Declare_Descriptor(_self) \
-    DMACU_PRIVATE_DECL Dma_Descriptor_t _self;
-
-/// \brief (Re-)declares a local DMA descriptor
-#define Dma_Declare_Local_Descriptor(_self,_suffix) \
-    DMACU_PRIVATE_DECL Dma_Descriptor_t Dma_Local_Name(_self,_suffix);
-
-/// \brief References a declared descriptor
-#define Dma_Local_Reference(_self,_suffix) \
-    (&Dma_Local_Name(_self, _suffix))
-
-/// \brief Common DMA copy core operation
-///
-/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
-///
-/// width indicates the source/destination transfer width in PL080's log-2 encoding:
-///  - width=0 generates a byte copy
-///  - width=1 generates a half-word (16-bit) copy
-///  - width=2 generates a word (32-bit) copy
-///
-#define Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,_width) \
-    _qual Dma_Define_Descriptor(_self, \
-        .src  = (Dma_UIntPtr_t) (_src), \
-        .dst  = (Dma_UIntPtr_t) (_dst), \
-        .lli  = (Dma_UIntPtr_t) (_lli), \
-        .ctrl = UINT32_C(0x0C000000) + (((_width) & 0x3u) << 21u) + (((_width) & 0x3u) << 18u) + (uint32_t) (_size) \
-    )
-
-/// \brief Basic byte (8-bit) wise DMA copy operation
-///
-/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
-///
-#define Dma_ByteCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,0u)
-
-// Patchable version of Dma_ByteCopy
-#define Dma_ByteCopy(_self,_dst,_src,_size,_lli) \
-    Dma_ByteCopy_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
-
-// Fixed (non-patchable) version of Dma_ByteCopy
-#define Dma_FixedByteCopy(_self,_dst,_src,_size,_lli) \
-    Dma_ByteCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
-
-/// \brief Basic half-word (16-bit) wise DMA copy operation
-///
-/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
-/// Size give the number of 16-bit half-words to copy
-///
-#define Dma_HalfWordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,1u)
-
-// Patchable version of Dma_HalfWordCopy
-#define Dma_HalfWordCopy(_self,_dst,_src,_size,_lli) \
-    Dma_HalfWordCopy_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
-
-// Fixed (non-patchable) version of DmaHalfWordCopy
-#define Dma_FixedHalfWordCopy(_self,_dst,_src,_size,_lli) \
-    Dma_HalfWordCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
-
-/// \brief Basic word (32-bit) wise DMA copy operation
-///
-/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
-/// Size give the number of 32-bit words to copy
-///
-#define Dma_WordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,2u)
-
-// Patchable version of Dma_WordCopy
-#define Dma_WordCopy(_self,_dst,_src,_size,_lli) \
-    Dma_WordCopy_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
-
-// Fixed (non-patchable) version of DmaHalfWordCopy
-#define Dma_FixedWordCopy(_self,_dst,_src,_size,_lli) \
-    Dma_WordCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
-
-/// \brief Basic byte-wise DMA fill operation.
-///
-/// Fills a block of "size" bytes at "dst" with the byte found at "src". Then links to the
-/// next descriptor at "lli".
-///
-#define Dma_ByteFill_Core(_qual,_self,_dst,_src,_size,_lli) \
-    _qual Dma_Define_Descriptor(_self, \
-        .src  = (Dma_UIntPtr_t) (_src), \
-        .dst  = (Dma_UIntPtr_t) (_dst), \
-        .lli  = (Dma_UIntPtr_t) (_lli), \
-        .ctrl = UINT32_C(0x08000000) + (uint32_t) (_size) \
-    )
-
-// Fixed (non-patchable) version of Dma_ByteFill
-#define Dma_ByteFill(_self,_dst,_src,_size,_lli) \
-    Dma_ByteFill_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
-
-// Fixed (non-patchable) version of Dma_ByteFill
-#define Dma_FixedByteFill(_self,_dst,_src,_size,_lli) \
-    Dma_ByteFill_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
-
-//-------------------------------------------------------------------------------------------------
 /// \brief Execution state of the DMACU virtual CPU
 ///
 /// \note The DMACU virtual CPU requires the CPU structure to be aligned on an even 256-byte boundary
@@ -252,14 +142,6 @@ typedef struct Dmacu_Cpu
     uint32_t ActiveLogicSbox;
 } Dmacu_Cpu_t;
 
-/// \brief Gets the virtual CPU's global execution state.
-///
-extern Dmacu_Cpu_t* Dmacu_GetCpu(void);
-
-/// \brief Gets the DMA descriptor for booting and running the virtual CPU.
-///
-extern const Dma_Descriptor_t* Dmacu_CpuBootDescriptor(void);
-
 //-------------------------------------------------------------------------------------------------
 // Helper functions to interact with the virtual CPU
 //
@@ -268,11 +150,20 @@ extern const Dma_Descriptor_t* Dmacu_CpuBootDescriptor(void);
 ///
 extern void Dmacu_RunTestProgram(void);
 
-/// \brief Configures a DMACU virtual CPU for executing a test small program.
+/// \brief Configures a DMACU virtual CPU for executing a small test program.
 ///
 /// \param[out] cpu points to the CPU state object to be configuzed.
 ///
 extern void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu);
+
+/// \brief Proof of the simulation hypothesis in the PL080 universe :)
+///
+/// This function is a drop-in replacmeent for @ref Dmacu_SetupTestProgram. It configures a
+/// second DMACU instrance to execute simulate a (simplified) PL080 DMA controller, which in
+/// turn executes the main test program (aka @ref Dmacu_SetupTestProgram).
+///
+/// \param[out] cpu points to the (primary) CPU state object to be configuzed.
+extern void Dmacu_SetupVirtualPL080(Dmacu_Cpu_t *cpu);
 
 /// \brief Dumps the current CPU execution state of the virtual CPU to the standard output.
 ///

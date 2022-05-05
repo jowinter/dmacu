@@ -12,7 +12,9 @@
 #
 COMMON_CPPFLAGS  := -I./vcpu/
 
-COMMON_C_SOURCES := ./vcpu/dmacu.c
+COMMON_C_SOURCES := ./vcpu/dmacu_shared.c
+COMMON_C_SOURCES += ./vcpu/dmacu_instance.c
+COMMON_C_SOURCES += ./vcpu/vpl080.c
 COMMON_C_SOURCES += ./vcpu/rt.c
 COMMON_C_SOURCES += ./vcpu/utils.c
 
@@ -122,8 +124,9 @@ $(EXECUTABLE): $(OBJECTS)
 $(HOST_EXECUTABLE): $(HOST_C_SOURCES) $(MC_INCS)
 	$(HOST_CC) -o $@ $(HOST_CFLAGS) $(HOST_C_SOURCES)
 
-# Explicitly declare the dependecy for utils.o (test program)
+# Explicitly declare the dependecy for utils.o and vpl080.o (test program)
 vcpu/utils.o: $(MC_INCS)
+vcpu/vpl080.o: $(MC_INCS)
 
 #--------------------------------------------------------------------------------------------------
 # Build the microcode

@@ -16,7 +16,7 @@
 #include <dmacu.h>
 #include "pl080.h"
 
-#include <dmacu.h>
+#include <dmacu_instance.h> // primary instance
 
 #include <stdint.h>
 #include <stdio.h>

@@ -384,14 +384,24 @@
           <GroupName>vcpu</GroupName>
           <Files>
             <File>
-              <FileName>dmacu.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\vcpu\dmacu.c</FilePath>
-            </File>
-            <File>
               <FileName>dmacu.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\vcpu\dmacu.h</FilePath>
+            </File>
+            <File>
+              <FileName>dmacu_instance.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\vcpu\dmacu_instance.c</FilePath>
+            </File>
+            <File>
+              <FileName>dmacu_instance.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\..\..\vcpu\dmacu_instance.h</FilePath>
+            </File>
+            <File>
+              <FileName>dmacu_shared.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\vcpu\dmacu_shared.c</FilePath>
             </File>
             <File>
               <FileName>rt.c</FileName>
@@ -402,6 +412,11 @@
               <FileName>utils.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\vcpu\utils.c</FilePath>
+            </File>
+            <File>
+              <FileName>vpl080.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\vcpu\vpl080.c</FilePath>
             </File>
           </Files>
         </Group>

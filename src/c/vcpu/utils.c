@@ -11,7 +11,7 @@
  * @file utils.c
  * @brief Utilities for working with the DMACU virtual CPU
  */
-#include "dmacu.h"
+#include "dmacu_instance.h" // Primary instance
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,40 +66,13 @@ static const uint8_t gTestProgram[] =
 };
 
 //-----------------------------------------------------------------------------------------
-//
-// Proof-of-Concept demo for the "virtual" PL080 (work in progress)
-//
-#if (DMACU_VIRTUAL_PL080 != 0)
-/// \brief Microcode of the virtual PL080
-DMACU_ALIGNED(0x1000)
-static const uint8_t gVPL080Code[] =
-{
-	// Source the generated microcode program for the demo
-#	include "mc/pl080.code.inc"
-};
-
-/// \brief Hello-world test message
-static const char gkVPL080Hello[] = "simulation hypothesis? ... to be proven! (in a pl080 world) ;)";
-
-/// \brief Initial descriptor for the virtual PL080
-static Dma_Descriptor_t gVPL080BootstrapDescriptor;
-#endif
-
-//-----------------------------------------------------------------------------------------
 void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 {
 	// Clear the CPU structure
 	memset(cpu, 0, sizeof(Dmacu_Cpu_t));
 
 	// Setup the initial program counter
-#if (DMACU_VIRTUAL_PL080 != 0)
-	// Virtual PL080 mode
-	cpu->ProgramBase = (uint32_t) &gVPL080Code[0u];
-#else
-	// Freestanding mode (execute from flash)
 	cpu->ProgramBase = (uint32_t) &gTestProgram[0u];
-#endif
-
 	cpu->PC = cpu->ProgramBase;
 
 	// Fill the register file with a test pattern
@@ -123,25 +96,6 @@ void Dmacu_SetupTestProgram(Dmacu_Cpu_t *cpu)
 	cpu->RegFile[225u] = 0xADu;
 	cpu->RegFile[226u] = 0xC0u;
 	cpu->RegFile[227u] = 0xDEu;
-
-#if (DMACU_VIRTUAL_PL080 != 0)
-	// (work in progress)
-	// Use r246:r245:r244:r243 to pass the initial DMA descriptor for the (inner) virtual PL080
-	const Dma_UIntPtr_t virt_pl080_bootstrap_descriptor = Dma_PtrToAddr(&gVPL080BootstrapDescriptor);
-	cpu->RegFile[243u] = (uint8_t) (virt_pl080_bootstrap_descriptor & 0xFFu);
-	cpu->RegFile[244u] = (uint8_t) ((virt_pl080_bootstrap_descriptor >> 8u)  & 0xFFu);
-	cpu->RegFile[245u] = (uint8_t) ((virt_pl080_bootstrap_descriptor >> 16u) & 0xFFu);
-	cpu->RegFile[246u] = (uint8_t) ((virt_pl080_bootstrap_descriptor >> 24u) & 0xFFu);
-
-	gVPL080BootstrapDescriptor = (Dma_Descriptor_t)
-	{
-		.src  = Dma_PtrToAddr(&gkVPL080Hello[0u]),
-		.dst  = Dma_PtrToAddr(&gTestRam[0u]),
-		.lli  = UINT32_C(0),
-		.ctrl = UINT32_C(0x0C000000) + sizeof(gkVPL080Hello)
-	};
-
-#endif
 
 	// Use r247 to pass a "platform-id" from the HAL layer
 	//
@@ -178,7 +132,11 @@ void Dmacu_RunTestProgram(void)
 	Dmacu_Cpu_t *const cpu = Dmacu_GetCpu();
 
 	// Setup the test program
+#if (DMACU_VIRTUAL_PL080 == 0)
 	Dmacu_SetupTestProgram(cpu);
+#else
+	Dmacu_SetupVirtualPL080(cpu);
+#endif
 
 	// Dump the initial CPU state (after test program setup)
 #if !DMACU_QUIET
