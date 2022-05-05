@@ -94,7 +94,7 @@ DMACU.PROGRAM.BEGIN demo
 	DMACU.MOV2      gLedGpioPin2,  gRamBase3, gRamBase2
 	DMACU.MOV.IMM16 gLedGpioMask0, 0x0001
 	DMACU.MOV.IMM16 gLedGpioMask2, 0x0000
-	DMACU.JMP       1f
+	DMACU.JMP       0f
 
 .Lsetup_qemu:
 	// RealView System Control Block (and its LEDs register)
@@ -102,29 +102,41 @@ DMACU.PROGRAM.BEGIN demo
 	DMACU.MOV.IMM16 gLedGpioPin2,  0x1000 // -"-
 	DMACU.MOV.IMM16 gLedGpioMask0, 0x0001 // PIN mask is 0x00000001
 	DMACU.MOV.IMM16 gLedGpioMask2, 0x0000 // -"-
-	DMACU.JMP       1f
+	DMACU.JMP       0f
 
 .Lsetup_lpcxpresso1769:
 	DMACU.MOV.IMM16 gLedGpioPin0,  0xC014 // PIN register (LPC_GPIO0->FIOPIN) @ 0x2009C014
 	DMACU.MOV.IMM16 gLedGpioPin2,  0x2009 // -"-
 	DMACU.MOV.IMM16 gLedGpioMask0, 0x0000 // PIN mask is 0x0000040
 	DMACU.MOV.IMM16 gLedGpioMask2, 0x0040 // -"-
-	DMACU.JMP       1f
+	DMACU.JMP       0f
 
 	//-------------------------------------------------------------------------------------
 	// Part 1: Loop around a bit
 	//
-	DMACU.MOV.IMM8 r0, 0x08
+0:	DMACU.MOV.IMM8 r0, 0x08
 	DMACU.MOV.IMM8 r1, 0x00
 
 1:	DMACU.BEQ      2f, r0, 0x00
 	DMACU.ADD.IMM8 r0, r0, 0xFF
 	DMACU.ADD.IMM8 r1, r1, 0x01
+
+	DMACU.MOV.IMM8 r34, '.'
+	DMACU.JAL      r32, uart_putchar
+
 	DMACU.JMP      1b
 
 2:	DMACU.BNE      3f, r1, 0x04
+
+	DMACU.MOV.IMM8 r34, '\n'
+	DMACU.JAL      r32, uart_putchar
+
 	DMACU.JMP      4f
-3:	DMACU.ADD.IMM8 r0, r0, 0x01
+
+3:	DMACU.MOV.IMM8 r34, '+'
+	DMACU.JAL      r32, uart_putchar
+
+	DMACU.ADD.IMM8 r0, r0, 0x01
 	DMACU.ADD.IMM8 r1, r1, 0xFF
 	DMACU.NOT      r2, r0
 	DMACU.EOR      r3, r2, r1
