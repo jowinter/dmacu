@@ -128,6 +128,10 @@ $(HOST_EXECUTABLE): $(HOST_C_SOURCES) $(MC_INCS)
 vcpu/utils.o: $(MC_INCS)
 vcpu/vpl080.o: $(MC_INCS)
 
+# Special purpose testing
+hostemu-arm:
+	$(MAKE) -C . HOST_CC=arm-none-eabi-gcc HOST_CPUFLAGS="-mcpu=arm926ej-s --specs=nano.specs --specs=rdimon.specs" clean hostemu32.elf
+
 #--------------------------------------------------------------------------------------------------
 # Build the microcode
 #
