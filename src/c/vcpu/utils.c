@@ -24,7 +24,7 @@ extern Dmacu_Cpu_t *SlaveCpu_GetCpu(void);
 
 // Enable dumping of the ROM on Dmacu_DumpCpuState
 #if !defined(DMACU_DUMP_ROM)
-# define DMACU_DUMP_ROM (1)
+# define DMACU_DUMP_ROM (0)
 #endif
 
 // Virtual PL080 mode (work in progress)
