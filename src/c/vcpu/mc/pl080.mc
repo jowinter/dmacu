@@ -176,11 +176,9 @@ Virtual_PL080_RunChannel:
 .LCopyOneElement:
 	DMACU.HI4      rTmp0, DMACCxControl_2
 	DMACU.AND      rTmp0, rTmp0, kLit_0x0E
-	DMACU.ROR1     rTmp0, rTmp0
-
 	DMACU.BEQ      .LByteCopy, rTmp0, 0x0
-	DMACU.BEQ      .LHalfCopy, rTmp0, 0x1
-	DMACU.BEQ      .LWordCopy, rTmp0, 0x2
+	DMACU.BEQ      .LHalfCopy, rTmp0, 0x2
+	DMACU.BEQ      .LWordCopy, rTmp0, 0x4
 	DMACU.UND      0xE001
 
 	// Copy one byte from source to dest
