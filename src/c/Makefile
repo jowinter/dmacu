@@ -38,7 +38,7 @@ CROSS_LD       := $(CROSS_PREFIX)gcc
 CROSS_OBJCOPY  := $(CROSS_PREFIX)objcopy
 
 CROSS_CPUFLAGS := -mcpu=arm926ej-s
-CROSS_CPPFLAGS := -I./vcpu/
+CROSS_CPPFLAGS := $(COMMON_CPPFLAGS)
 
 CROSS_CFLAGS   := $(CROSS_CPUFLAGS) $(CROSS_CPPFLAGS) -Wall -std=c99 -pedantic -g -O1 -ffunction-sections -fdata-sections
 CROSS_LDFLAGS  := $(CROSS_CPUFLAGS) --specs=nano.specs --specs=rdimon.specs
