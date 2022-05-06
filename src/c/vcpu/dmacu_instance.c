@@ -1804,8 +1804,8 @@ Cpu_Opcode_End(StoreWord)
 Cpu_Opcode_Begin(Undef)
 	DMACU_PRIVATE DMACU_CONST uint32_t Dma_Global_Name(Lit_DEADC0DE) = 0xDEADC0DEu;
 
-	// Copy the 0xDEADC0DE value to Cpu_NextPC, then halt via LLI=0
-	Dma_FixedWordCopy(Cpu_OpUndef_1,
+	// Copy the 0xDEADC0DE value to Cpu_NextPC, then halt via LLI=0 and trigger a terminal count interrupt
+	Dma_FixedTerminalWordCopy(Cpu_OpUndef_1,
 		&Dma_Global_Name(gCpu).NextPC,
 		Dma_Global_Reference(Lit_DEADC0DE),
 		1u,
