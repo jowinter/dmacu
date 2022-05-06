@@ -337,7 +337,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>-Wall -Wno-c11-extensions -pedantic</MiscControls>
-              <Define>DMACU_QUIET=1</Define>
+              <Define>DMACU_QUIET=1,DMACU_ROM_ALIGNMENT=0x1000,DMACU_VIRTUAL_PL080=0</Define>
               <Undefine></Undefine>
               <IncludePath>..\..\..\vcpu</IncludePath>
             </VariousControls>
@@ -373,7 +373,7 @@
             <ScatterFile>.\lpc176x.sct</ScatterFile>
             <IncludeLibs></IncludeLibs>
             <IncludeLibsPath></IncludeLibsPath>
-            <Misc>--datacompressor=off</Misc>
+            <Misc></Misc>
             <LinkerInputFile></LinkerInputFile>
             <DisabledWarnings></DisabledWarnings>
           </LDads>

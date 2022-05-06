@@ -28,15 +28,52 @@
 
 // GPDMA Channel Configuration registers definitions
 #define GPDMA_CH_CONFIG_E                  (1U    <<  0)
+#define GPDMA_CH_CONFIG_ITC                (1U    << 15)
 #define GPDMA_CH_CONFIG_A                  (1U    << 17)
 #define GPDMA_CH_CONFIG_H                  (1U    << 18)
 
 #define GPIO_LED_MASK   (1u << 22)
 
+// Override the IRQ handler
+extern void DMA_IRQHandler(void);
+
+// PL080 status flag (for Hal_DmaTransfer)
+static volatile uint32_t gHal_DmaTransferDone;
+
+//-------------------------------------------------------------------------------------------------
+// Disable semihosting
+//
+
+extern void _sys_exit(int status);
+extern void _ttywrch(int ch);
+
+__asm__ (".global __use_no_semihosting");
+
+__NO_RETURN void _sys_exit(int status)
+{
+	// Sleep forever
+	while (true)
+	{
+		if (0u != (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk))
+		{
+			// A debugger is presenz
+			__BKPT(0);
+		}
+
+		__WFE();
+	}
+}
+
+void _ttywrch(int ch)
+{
+	// Print via ITM (if enabled)
+	(void) ITM_SendChar(ch & 0xFFu);
+}
+
 //-------------------------------------------------------------------------------------------------
 const Hal_Config_t gHalConfig =
 {
-    .platform_id   = HAL_PLATFORM_LPCXPRESSO_1769
+	.platform_id   = HAL_PLATFORM_LPCXPRESSO_1769
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -45,9 +82,27 @@ void Hal_Init(void)
 	// Enable DMA clock
 	LPC_SC->PCONP |= (1U << 29);
 
-    // For simplicity: Setup GPIOs for blinking the on-board led of the LPC1769 LPCXpresso board
-    LPC_PINCON->PINSEL1 &= ~(3u << 12u);
-    LPC_GPIO0->FIODIR |= (1u << 22);
+	// For simplicity: Setup GPIOs for blinking the on-board led of the LPC1769 LPCXpresso board
+	LPC_PINCON->PINSEL1 &= ~(3u << 12u);
+	LPC_GPIO0->FIODIR |= (1u << 22);
+}
+
+//-------------------------------------------------------------------------------------------------
+void DMA_IRQHandler(void)
+{
+	const uint32_t int_stat = LPC_GPDMA->DMACIntStat;
+
+	// Clear terminal count interrupts
+	if (0u != (int_stat & (1u << DMACU_DMA_CHANNEL)))
+	{
+		// Channel 0 is done (terminal count or error)
+		gHal_DmaTransferDone = 1u;
+		__SEV();
+	}
+
+	// Clear error and terminal count IRQs
+	LPC_GPDMA->DMACIntErrClr  = int_stat;
+	LPC_GPDMA->DMACIntTCClear = int_stat;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -64,7 +119,7 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 		__NOP();
 	}
 
-	// Disable the channel (and clear the halt flag)
+	// Disable the channel (and clear the halt + IRQ flags)
 	LPC_GPDMACH0->DMACCConfig = 0u;
 
 	// Load the initial descriptor
@@ -73,18 +128,27 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 	LPC_GPDMACH0->DMACCLLI      = desc->lli;
 	LPC_GPDMACH0->DMACCControl  = desc->ctrl;
 
-    // Set the GPIO pin
-    LPC_GPIO0->FIOSET = (1u << 22);
+	// Set the GPIO pin
+	LPC_GPIO0->FIOSET = (1u << 22);
+
+	// Enable the DMA controller interrupt (transfer not yet done)
+	LPC_GPDMA->DMACIntTCClear = (1u << DMACU_DMA_CHANNEL);
+	LPC_GPDMA->DMACIntErrClr  = (1u << DMACU_DMA_CHANNEL);
+
+	gHal_DmaTransferDone = 0u;
+
+	// Ensure that the DMA IRQ is enabled
+	NVIC_EnableIRQ(DMA_IRQn);
 
 	// Enable the channel
-	LPC_GPDMACH0->DMACCConfig   |= GPDMA_CH_CONFIG_E;
+	LPC_GPDMACH0->DMACCConfig   |= (GPDMA_CH_CONFIG_E | GPDMA_CH_CONFIG_ITC);
 
 	// Wait until the channel becomes idle
-	while (0u != (LPC_GPDMACH0->DMACCConfig & GPDMA_CH_CONFIG_E))
+	while (!gHal_DmaTransferDone)
 	{
-		__NOP();
+		__WFE();
 	}
 
-    // And clear our GPIO pin again
-    LPC_GPIO0->FIOCLR = (1u << 22);
+	// And clear our GPIO pin again
+	LPC_GPIO0->FIOCLR = (1u << 22);
 }
