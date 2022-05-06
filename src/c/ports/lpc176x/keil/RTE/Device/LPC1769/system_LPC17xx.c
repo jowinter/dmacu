@@ -297,13 +297,13 @@
 #define CLKSRCSEL_Val         0x00000001
 #define PLL0_SETUP            1
 #define PLL0CFG_Val           0x00050063
-#define PLL1_SETUP            1
+#define PLL1_SETUP            0
 #define PLL1CFG_Val           0x00000023
 #define CCLKCFG_Val           0x00000003
 #define USBCLKCFG_Val         0x00000000
 #define PCLKSEL0_Val          0x00000000
 #define PCLKSEL1_Val          0x00000000
-#define PCONP_Val             0x042887DE
+#define PCONP_Val             0x00208000
 #define CLKOUTCFG_Val         0x00000000
 
 
