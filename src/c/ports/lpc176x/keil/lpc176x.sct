@@ -1,3 +1,4 @@
+#!armclang --target=arm-arm-none-eabi -march=armv7-m -E -x c
 ;
 ; Scatter-loading descriptor for the LPC176x C
 ;
@@ -39,6 +40,16 @@ LR_IROM1 0x00000000 0x000080000
 
 	; Test program (flash is not accessible in sleep mode - i.e. during WFE)
 	*(.rodata.gTestProgram)
+
+#if (DMACU_VIRTUAL_PL080 != 0)
+	; Slave CPU (for virtual PL080 operation)
+	*(.rodata.SlaveCpu*)
+	*(.data.SlaveCpu*)
+	*(.bss.SlaveCpu*)
+
+	; Microcode for the virtual PL080
+	*(.rodata.gVirtualPL080Code)
+#endif
   }
 
   RW_IRAM3 0x20080000 0x00004000
