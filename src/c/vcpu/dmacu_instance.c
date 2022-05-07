@@ -1798,7 +1798,7 @@ Cpu_Opcode_Begin(StoreWord)
 	Dma_WordCopy(Cpu_OpStoreWord_3,
 		DMA_INVALID_ADDR,
 		(Dma_PtrToAddr(&Dma_Global_Name(gCpu).Operands.Z) + 0u),
-		4u,
+		1u,
 		&Dma_Global_Name(Cpu_Writeback_PC)
 	)
 Cpu_Opcode_End(StoreWord)
