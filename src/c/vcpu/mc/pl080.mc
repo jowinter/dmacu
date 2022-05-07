@@ -159,92 +159,15 @@ Virtual_PL080_RunChannel:
 
 	// Channel has some work
 .LSetup:
-	// Get the transfer size:
-	//   rSizeHi:rSizeLo <= DMACCxControl[11:0]
-	DMACU.MOV rSizeLo, DMACCxControl_0
-	DMACU.LO4 rSizeHi, DMACCxControl_1
-
-	// Simplifications:
-	// - We assume a fixed burst size of 1 (DMACCxControl.DBSize == DMACCxControl.SBSize == 1)
-	// - We assume identical source and destination with (DMACCxControl.SWidth == DMACCxControl.DWidth == 1)
+	// Execute the DMA transfer on our underlying controller and link
 	//
-	// Our emulator will behave incorrectly if these simplifications are violated.
-	// (TODO: We could trap in those scenarios)
+	// NOTE: There is currently no need to sync back status changes (i.e. TransferSize going
+	// to zero or similar).
 	//
+	DMACU.DMACPY   DMACCxDstAddr_0, DMACCxSrcAddr_0, DMACCxControl_0
 
-	// Extract the transfer size from DMACCxControl.DWidth
-.LCopyOneElement:
-	DMACU.HI4      rTmp0, DMACCxControl_2
-	DMACU.AND      rTmp0, rTmp0, kLit_0x0E
-	DMACU.BEQ      .LByteCopy, rTmp0, 0x0
-	DMACU.BEQ      .LHalfCopy, rTmp0, 0x2
-	DMACU.BEQ      .LWordCopy, rTmp0, 0x4
-	DMACU.UND      0xE001
-
-	// Copy one byte from source to dest
-.LByteCopy:
-	DMACU.MOV.IMM8 rParam4, 0x01
-	DMACU.LDB      rDat0,   DMACCxSrcAddr_2, DMACCxSrcAddr_0
-	DMACU.STB      rDat0,   DMACCxDstAddr_2, DMACCxDstAddr_0
-	DMACU.JMP      .LIncrementSrcAddr
-
-	// Copy one half-word from source to dest
-.LHalfCopy:
-	DMACU.MOV.IMM8 rParam4, 0x02
-	DMACU.LDH      rDat0,   DMACCxSrcAddr_2, DMACCxSrcAddr_0
-	DMACU.STH      rDat0,   DMACCxDstAddr_2, DMACCxDstAddr_0
-	DMACU.JMP      .LIncrementSrcAddr
-
-	// Copy one word from source to dest
-.LWordCopy:
-	DMACU.MOV.IMM8 rParam4, 0x04
-	DMACU.LDW      rDat0,   DMACCxSrcAddr_2, DMACCxSrcAddr_0
-	DMACU.STW      rDat0,   DMACCxDstAddr_2, DMACCxDstAddr_0
-	DMACU.JMP      .LIncrementSrcAddr
-
-	// Source address increment (optional)
-.LIncrementSrcAddr:
-
-	// Test if source address increment is enabled
-	DMACU.AND      rTmp0,   DMACCxControl_3, kLit_0x04
-	DMACU.BEQ      .LIncrementDstAddr, rTmp0, 0x0
-
-	// Increment by transfer width
-	DMACU.MOV2     rParam0, DMACCxSrcAddr_1, DMACCxSrcAddr_0
-	DMACU.MOV2     rParam2, DMACCxSrcAddr_3, DMACCxSrcAddr_2
-	DMACU.JAL      rLinkB, Virtual_PL080_Add8To32
-	DMACU.MOV2     DMACCxSrcAddr_0, rParam1, rParam0
-	DMACU.MOV2     DMACCxSrcAddr_2, rParam3, rParam2
-
-	// Destination address increment (optional)
-.LIncrementDstAddr:
-
-	// Test if destination address increment is enabled
-	DMACU.AND      rTmp0,   DMACCxControl_3, kLit_0x08
-	DMACU.BEQ      .LDecrementSize, rTmp0, 0x0
-
-	// Increment by transfer width
-	DMACU.MOV2     rParam0, DMACCxDstAddr_1, DMACCxDstAddr_0
-	DMACU.MOV2     rParam2, DMACCxDstAddr_3, DMACCxDstAddr_2
-	DMACU.JAL      rLinkB, Virtual_PL080_Add8To32
-	DMACU.MOV2     DMACCxDstAddr_0, rParam1, rParam0
-	DMACU.MOV2     DMACCxDstAddr_2, rParam3, rParam2
-
-	// Decrement the transfer size
-.LDecrementSize:
-	// Subtract one from the size (two's complement)
-	DMACU.ACY    rTmp0,   rSizeLo, kLit_0xFF
-	DMACU.ADD    rTmp0,   rTmp0,   kLit_0xFF
-	DMACU.ADD    rSizeLo, rSizeLo, kLit_0xFF
-	DMACU.ADD    rSizeHi, rSizeHi, rTmp0
-
-	// Check for end of current transfer
-	DMACU.BNE    .LChannelHasMoreData, rSizeLo, 0x00
-	DMACU.BNE    .LChannelHasMoreData, rSizeHi, 0x00
-	DMACU.JMP    Virtual_PL080_LinkNextDescriptor
-
-.LChannelHasMoreData:
-	DMACU.JMP    .LCopyOneElement
+	// Link the next descriptor
+	DMACU.JMP      Virtual_PL080_LinkNextDescriptor
 
 	//-------------------------------------------------------------------------------------
 	// Helper to add an 8-bit value to a 32-bit value

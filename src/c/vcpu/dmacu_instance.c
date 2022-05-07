@@ -750,6 +750,7 @@ DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpStoreHalf_1 )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpLoadWord_1  )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpStoreWord_1 )
 DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpUndef_1     )
+DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpDmaCpy_1    )
 
 //-----------------------------------------------------------------------------------------
 //
@@ -805,7 +806,7 @@ DMACU_PRIVATE DMACU_READONLY Dma_UIntPtr_t Dma_Global_Name(Lut_InstructionTable)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpStoreWord_1)), // 0x1E - STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Store word indirect)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x1F - UND #imm24
 
-	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x20 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpDmaCpy_1   )), // 0x20 - DMACPY rZ+3:rZ+2:rZ+1:rZ, rB+3:rB+2:rB+1:rB, rA+3:rA+2:rA+1:rA  (PL080 DMA Copy)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x21 - (reserved; mapped to UND)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x22 - (reserved; mapped to UND)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x23 - (reserved; mapped to UND)
@@ -946,7 +947,7 @@ Cpu_Stage_Begin(Cpu_Decode)
 	// DE.4: Load the A operand from Regfile[CurrentOPC.Bytes[7:0]] (rA)
 	//
 	// NOTE: We always load rA+1:rA
-	Dma_ByteCopy(Cpu_Decode_4, &Dma_Global_Name(gCpu).Operands.A, &Dma_Global_Name(gCpu).RegFile[0], 2u, &Dma_Global_Name(Cpu_Decode_5))
+	Dma_ByteCopy(Cpu_Decode_4, &Dma_Global_Name(gCpu).Operands.A, &Dma_Global_Name(gCpu).RegFile[0], 4u, &Dma_Global_Name(Cpu_Decode_5))
 
 	// DE.5: Prepare loading the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
 	Dma_FixedPatchSrcLo8(Cpu_Decode_5, &Dma_Global_Name(Cpu_Decode_6), &Dma_Global_Name(gCpu).CurrentOPC.Bytes[1u], &Dma_Global_Name(Cpu_Decode_6))
@@ -954,7 +955,7 @@ Cpu_Stage_Begin(Cpu_Decode)
 	// DE.6: Load the B operand from Regfile[CurrentOPC.Bytes[15:8]] (rB)
 	//
 	// NOTE: We always load rB+1:rB
-	Dma_ByteCopy(Cpu_Decode_6, &Dma_Global_Name(gCpu).Operands.B, &Dma_Global_Name(gCpu).RegFile[0u], 2u, &Dma_Global_Name(Cpu_Decode_7))
+	Dma_ByteCopy(Cpu_Decode_6, &Dma_Global_Name(gCpu).Operands.B, &Dma_Global_Name(gCpu).RegFile[0u], 4u, &Dma_Global_Name(Cpu_Decode_7))
 
 	// DE.7: Prepare loading the Z operand from Regfile[CurrentOPC.Bytes[23:16]] (rZ)
 	Dma_FixedPatchSrcLo8(Cpu_Decode_7, &Dma_Global_Name(Cpu_Decode_8), &Dma_Global_Name(gCpu).CurrentOPC.Bytes[2u], &Dma_Global_Name(Cpu_Decode_8))
@@ -1845,3 +1846,58 @@ Cpu_Opcode_Begin(Undef)
 		DMA_INVALID_ADDR
 	)
 Cpu_Opcode_End(Undef)
+
+
+// 0x20 - DMACPY rZ+3:rZ+2:rZ+1:rZ, rB+3:rB+2:rB+1:rB, rA+3:rA+2:rA+1:rA - PL080 DMA Copy
+//
+//  31     24     16      8      0
+// +---------+------+------+------+
+// | 0x20    |  rZ  |  rB  |  rA  |
+// +---------+------+------+------+
+//
+// The DMACPY instruction enables the guest program to dynamically configure PL080 DMA transfers that are
+// executed on the underlying DMA controller. The linked list item (LLI) of the transfer is fixed (and provided
+// by the DMACU core itself).
+//
+// rZ+3:rZ+2:rZ+1:rZ - Mapped to the Channel Destination Address (DMACCxDstAddr)
+// rB+3:rB+2:rB+1:rB - Mapped to the Channel Source Address      (DMACCxSrcAddr)
+// rA+3:rA+2:rA+1:rA - Mapped to the Channel Control Register    (DMACCxControl)
+//
+//
+Cpu_Opcode_Begin(DmaCpy)
+	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpDmaCpy_2)
+	DMACU_READONLY  Dma_Declare_Descriptor(Cpu_OpDmaCpy_3)
+	DMACU_READWRITE Dma_Declare_Descriptor(Cpu_OpDmaCpy_4)
+
+	// Step 1: Configure the channel destination address
+	Dma_FixedWordCopy(Cpu_OpDmaCpy_1,
+		&Dma_Global_Name(Cpu_OpDmaCpy_4).dst,
+		(Dma_PtrToAddr(&Dma_Global_Name(gCpu).Operands.Z) + 0u),
+		1u,
+		&Dma_Global_Name(Cpu_OpDmaCpy_2)
+	)
+
+	// Step 2: Configure the channel source address
+	Dma_FixedWordCopy(Cpu_OpDmaCpy_2,
+		&Dma_Global_Name(Cpu_OpDmaCpy_4).src,
+		(Dma_PtrToAddr(&Dma_Global_Name(gCpu).Operands.B) + 0u),
+		1u,
+		&Dma_Global_Name(Cpu_OpDmaCpy_3)
+	)
+
+	// Step 3: Configure the channel control register
+	Dma_FixedWordCopy(Cpu_OpDmaCpy_3,
+		&Dma_Global_Name(Cpu_OpDmaCpy_4).ctrl,
+		(Dma_PtrToAddr(&Dma_Global_Name(gCpu).Operands.A) + 0u),
+		1u,
+		&Dma_Global_Name(Cpu_OpDmaCpy_4)
+	)
+
+	// Step 4: User-configured DMA transfer
+	Dma_ByteCopy(Cpu_OpDmaCpy_4,
+		DMA_INVALID_ADDR,
+		DMA_INVALID_ADDR,
+		0u,
+		&Dma_Global_Name(Cpu_Writeback_PC)
+	)
+Cpu_Opcode_End(DmaCpy)

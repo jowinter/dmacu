@@ -485,3 +485,22 @@ DMACU.INST.BRANCH.REL 0x0C, (\rZ), (\imm8), (\tgt)
 .macro DMACU.UND imm24=0
 	DMACU.INST 0x1F, (((\imm24)>>16)&0xFF), (((\imm24)>>8)&0xFF), (((\imm24)>>0)&0xFF)
 .endm
+
+/* 0x20 - DMACPY rZ+3:rZ+2:rZ+1:rZ, rB+3:rB+2:rB+1:rB, rA+3:rA+2:rA+1:rA - PL080 DMA Copy
+ *
+ *  31     24     16      8      0
+ * +---------+------+------+------+
+ * | 0x20    |  rZ  |  rB  |  rA  |
+ * +---------+------+------+------+
+ *
+ * The DMACPY instruction enables the guest program to dynamically configure PL080 DMA transfers that are
+ * executed on the underlying DMA controller. The linked list item (LLI) of the transfer is fixed (and provided
+ * by the DMACU core itself).
+ *
+ * rZ+3:rZ+2:rZ+1:rZ - Mapped to the Channel Destination Address (DMACCxDstAddr)
+ * rB+3:rB+2:rB+1:rB - Mapped to the Channel Source Address      (DMACCxSrcAddr)
+ * rA+3:rA+2:rA+1:rA - Mapped to the Channel Control Register    (DMACCxControl)
+ */
+.macro DMACU.DMACPY rZ, rB, rA
+	DMACU.INST 0x20, (\rZ), (\rB), (\rA)
+.endm
