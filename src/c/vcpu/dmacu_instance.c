@@ -770,7 +770,7 @@ DMACU_READONLY Dma_Declare_Descriptor(Cpu_OpUndef_1     )
 /// Instruction decode table
 ///
 DMACU_ALIGNED(256)
-DMACU_PRIVATE DMACU_READONLY Dma_UIntPtr_t Dma_Global_Name(Lut_InstructionTable)[32u] =
+DMACU_PRIVATE DMACU_READONLY Dma_UIntPtr_t Dma_Global_Name(Lut_InstructionTable)[64u] =
 {
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpNop_1      )), // 0x00 - NOP                                       (No-operation)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpMovImm_1   )), // 0x01 - MOV rZ, #imm8                             (Move from 8-bit immediate to register pair)
@@ -804,6 +804,39 @@ DMACU_PRIVATE DMACU_READONLY Dma_UIntPtr_t Dma_Global_Name(Lut_InstructionTable)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpLoadWord_1 )), // 0x1D - LDW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Load word indirect)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpStoreWord_1)), // 0x1E - STW rZ+3:rZ+2:rZ+1:rZ, [rB+1:rB:rA+1:rA]  (Store word indirect)
 	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x1F - UND #imm24
+
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x20 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x21 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x22 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x23 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x24 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x25 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x26 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x27 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x28 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x29 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x2A - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x2B - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x2C - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x2D - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x2E - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x2F - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x30 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x31 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x32 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x33 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x34 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x35 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x36 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x37 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x38 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x39 - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x3A - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x3B - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x3C - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x3D - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x3E - (reserved; mapped to UND)
+	Dma_PtrToAddr(Dma_Global_Reference(Cpu_OpUndef_1    )), // 0x3F - (reserved; mapped to UND)
 };
 
 //-----------------------------------------------------------------------------------------
