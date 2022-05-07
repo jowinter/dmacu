@@ -12,6 +12,21 @@
 #define LABEL_AT(x)
 #define UINT32_C(x) .long (x)
 
+// Interbit delay (extra)
+#if !defined(DMACU_DEMO_INTERBIT_DELAY)
+# define DMACU_DEMO_INTERBIT_DELAY (0)
+#endif
+
+// UART output
+#if !defined(DMACU_DEMO_UART)
+# define DMACU_DEMO_UART (1)
+#endif
+
+// LED output
+#if !defined(DMACU_DEMO_LED)
+# define DMACU_DEMO_LED (1)
+#endif
+
 // Obfuscates a byte on the host (for our test-ram message)
 //
 // We obfuscate be rotating right by 1 bit and XOR-ing with 0x5A
@@ -120,23 +135,12 @@ DMACU.PROGRAM.BEGIN demo
 1:	DMACU.BEQ      2f, r0, 0x00
 	DMACU.ADD.IMM8 r0, r0, 0xFF
 	DMACU.ADD.IMM8 r1, r1, 0x01
-
-	DMACU.MOV.IMM8 r34, '.'
-	DMACU.JAL      r32, uart_putchar
-
 	DMACU.JMP      1b
 
 2:	DMACU.BNE      3f, r1, 0x04
-
-	DMACU.MOV.IMM8 r34, '\n'
-	DMACU.JAL      r32, uart_putchar
-
 	DMACU.JMP      4f
 
-3:	DMACU.MOV.IMM8 r34, '+'
-	DMACU.JAL      r32, uart_putchar
-
-	DMACU.ADD.IMM8 r0, r0, 0x01
+3:	DMACU.ADD.IMM8 r0, r0, 0x01
 	DMACU.ADD.IMM8 r1, r1, 0xFF
 	DMACU.NOT      r2, r0
 	DMACU.EOR      r3, r2, r1
@@ -173,12 +177,16 @@ DMACU.PROGRAM.BEGIN demo
 	DMACU.ROL1     r3, r3
 
 	// - Send a byte to the PL011 UART	(currently only supported on QEMU)
+#if (DMACU_DEMO_UART != 0)
 	DMACU.MOV      r34, r3        // --> Parameter for our subroutine
 	DMACU.JAL      r32, uart_putchar
+#endif
 
 	// - Blink-out the byte via our LED (on all platforms)
+#if (DMACU_DEMO_LED != 0)
 	DMACU.MOV      r34, r3        // --> Parameter for our subroutine
 	DMACU.JAL      r32, blink_led // --> Call the blink subroutine
+#endif
 
 	// - Store the deobfuscated byte
 	DMACU.STB      r3, gRamBase2, r16
@@ -218,9 +226,6 @@ DMACU.PROGRAM.BEGIN demo
 	//
 
 blink_led:
-	// DEBUG: Skip on non-hw platforms (for performance)
-	DMACU.BNE 14f, rPlatformId, kLpcXpresso1769Platform
-
 	// - Start clocking at the LSB
 	DMACU.MOV.IMM8 r35, 0x01
 
@@ -254,12 +259,15 @@ blink_led:
 	// - Write the new led status
 11:	DMACU.STW      r41, gLedGpioPin2, gLedGpioPin0
 
+
+#if (DMACU_DEMO_INTERBIT_DELAY > 0)
 	// Inter-bit delay (for illustration)
-	DMACU.MOV.IMM8 r36, 0x40
+	DMACU.MOV.IMM8 r36, DMACU_DEMO_INTERBIT_DELAY
 
 12:	DMACU.BEQ      13f, r36, 0x00
 	DMACU.ADD.IMM8 r36, r36, 0xFF
 	DMACU.JMP      12b
+#endif
 
 	// - Advance r35 to the next bit and loop
 13: DMACU.BEQ      14f, r35, 0x80
@@ -289,6 +297,7 @@ blink_led:
 	.equ rUartTemp,        r41
 	.equ kUartTxReadyFlag, r45
 
+#if (DMACU_DEMO_UART != 0)
 uart_putchar:
 	// Platform check: Use the PL011 UART on QEMU
 	DMACU.BEQ       uart_putchar_qemu, rPlatformId, kQemuPlatform
@@ -312,4 +321,6 @@ uart_putchar_qemu_wait_for_tx_ready:
 	// Send one byte and return
     DMACU.STB       r34, kPeriphBase, kUartDataReg
 	DMACU.RET       r32
+#endif
+
 DMACU.PROGRAM.END   demo
