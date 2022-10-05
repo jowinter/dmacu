@@ -40,6 +40,12 @@ extern void DMA_IRQHandler(void);
 // PL080 status flag (for Hal_DmaTransfer)
 static volatile uint32_t gHal_DmaTransferDone;
 
+// Bit-masks for the red, green, and blue LEDs (RGB LED1) on the LPXxpress1769 eval board
+#define GPIO0_RED_LED_Msk   (1u << 22u)
+
+#define GPIO3_GREEN_LED_Msk (1u << 25u)
+#define GPIO3_BLUE_LED_Msk  (1u << 26u)
+
 //-------------------------------------------------------------------------------------------------
 // Disable semihosting
 //
@@ -84,7 +90,96 @@ void Hal_Init(void)
 
 	// For simplicity: Setup GPIOs for blinking the on-board led of the LPC1769 LPCXpresso board
 	LPC_PINCON->PINSEL1 &= ~(3u << 12u);
-	LPC_GPIO0->FIODIR |= (1u << 22);
+
+    // Disable the red LED
+    LPC_GPIO0->FIOSET   =  GPIO0_RED_LED_Msk;
+	LPC_GPIO0->FIODIR   |= GPIO0_RED_LED_Msk;
+
+    // Disable the green and blue LEDs
+    LPC_GPIO3->FIOSET   =  (GPIO3_GREEN_LED_Msk | GPIO3_BLUE_LED_Msk);
+    LPC_GPIO3->FIODIR   |= (GPIO3_GREEN_LED_Msk | GPIO3_BLUE_LED_Msk);
+
+    // Start the SysTick timer (10 kHz)
+    SystemCoreClockUpdate();
+    SysTick_Config(SystemCoreClock / 10000u);
+
+}
+
+//-------------------------------------------------------------------------------------------------
+// Simple software PWM (blue LED) + heart beat using the SysTick timer
+//
+// - We implement a simple heartbeat LED blinking at ~2 Hz
+// - In the "dark"   state the blue LED is driven by a software PWM at ~1% duty cycle
+// - In the "bright" state the blue LED is driven by a software PWM at ~10% duty cycle
+//
+// - The heartbeat counter disables itself after 3 full cycles
+
+// Reload value for the software PWM
+#define SOFT_PWM_RELOAD 100u
+
+#define SOFT_PWM_LED_DARK   ((1u * SOFT_PWM_RELOAD)  / 100u) // ~1% Duty Cycle
+#define SOFT_PWM_LED_BRIGHT ((10u * SOFT_PWM_RELOAD) / 100u) // ~10% Duty Cycle
+
+static uint32_t gSoftPwmCounter   = SOFT_PWM_RELOAD - 1u;
+static uint32_t gSoftPwmDutyCycle = SOFT_PWM_LED_DARK;
+
+// Reload value for the heart-beat counter
+#define HEARTBEAT_RELOAD 5000u
+#define HEARTBEAT_FULL_CYCLES 6u
+
+static uint32_t gHeartBeatCounter    = HEARTBEAT_RELOAD - 1u;
+static uint32_t gRemainingHeartBeats = HEARTBEAT_FULL_CYCLES - 1u;
+
+void SysTick_Handler(void)
+{
+    // Update the soft PWM counter
+    if (gSoftPwmCounter > 0u)
+    {
+        gSoftPwmCounter -= 1u;
+    }
+    else
+    {
+        gSoftPwmCounter = SOFT_PWM_RELOAD - 1u;
+    }
+
+    // Update the LED output status (based on softare PWM duty-cycle)
+    if (gSoftPwmCounter < gSoftPwmDutyCycle)
+    {
+        // LED on
+        LPC_GPIO3->FIOCLR = GPIO3_BLUE_LED_Msk;
+    }
+    else
+    {
+        // LED off
+        LPC_GPIO3->FIOSET = GPIO3_BLUE_LED_Msk;
+    }
+
+    // Heart-beat counter
+    if (gRemainingHeartBeats > 0u)
+    {
+        // More heartbeats to come
+        if (gHeartBeatCounter > 0u)
+        {
+            gHeartBeatCounter -= 1u;
+        }
+        else
+        {
+            // Toggle the heart-beat PWM counter
+            gSoftPwmDutyCycle = (SOFT_PWM_LED_DARK == gSoftPwmDutyCycle) ? SOFT_PWM_LED_BRIGHT : SOFT_PWM_LED_DARK;4
+            gHeartBeatCounter = HEARTBEAT_RELOAD - 1u;
+            gRemainingHeartBeats -= 1u;
+        }
+    }
+    else
+    {
+        // Flatline
+
+        gSoftPwmDutyCycle = 0u;
+
+        SysTick->CTRL &= ~SysTick_CTRL_ENABLE_Msk;
+
+        LPC_GPIO3->FIOSET = GPIO3_BLUE_LED_Msk;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -149,6 +244,6 @@ void Hal_DmaTransfer(const Dma_Descriptor_t *desc)
 		__WFE();
 	}
 
-	// And clear our GPIO pin again
-	LPC_GPIO0->FIOCLR = (1u << 22);
+	// Disable the RED LED, enable the green LED
+	LPC_GPIO0->FIODIR &= ~GPIO0_RED_LED_Msk;
 }
