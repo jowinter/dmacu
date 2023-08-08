@@ -11,6 +11,7 @@
  * @file utils.c
  * @brief Utilities for working with the DMACU virtual CPU
  */
+#define DMACU_ARCH_DETAILS 1
 #include "dmacu_instance.h" // Primary instance
 
 #include <stdio.h>

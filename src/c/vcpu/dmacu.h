@@ -48,22 +48,8 @@
 # define DMACU_READWRITE
 #endif
 
-/// \brief 32-bit pointer type for the virtual CPU emulator.
-///
-typedef uint32_t Dma_UIntPtr_t;
-
-/// \brief PL080 DMA descriptor
-///
-/// \note See the PL080 DMA controller datasheet for details on the fields of the
-///    structure.
-///
-typedef struct Dma_Descriptor
-{
-    Dma_UIntPtr_t src; ///!< Source address of the transfer
-    Dma_UIntPtr_t dst; ///!< Destination address of the transfer
-    Dma_UIntPtr_t lli; ///!< Address of the next transfer in the chain
-    uint32_t ctrl;     ///!< Control bits and transfer size
-} Dma_Descriptor_t;
+// DMA controller hardware architecture
+#include "dmacu_arch_pl080.h"
 
 /// \brief Converts a C pointer to a 32-bit DMA address.
 ///
