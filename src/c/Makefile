@@ -4,7 +4,7 @@
 # Copyright (c) 2019-2022 Johannes Winter <jrandom@speed.at>
 #
 # This file is licensed under the MIT License. See LICENSE in the root directory
-# of the prohect for the license text.
+# of the project for the license text.
 #
 
 #--------------------------------------------------------------------------------------------------
@@ -79,12 +79,8 @@ MC_INCS        := $(MC_BINARIES:%.bin=%.inc)
 #
 
 # Build as 32 bit binary (PL080 emulation does currently not work on 64-bit)
-#
-# FIXME: We currently force the maximum RAM alignment to 4K (instead of 64K) due to limitation
-# with qemu-i386 running on WSL. This might cause bugs ...
-#
 HOST_CC        := clang
-HOST_CPUFLAGS  := -m32 -DDMACU_RAM_ALIGNMENT=0x1000 -DDMACU_ROM_ALIGNMENT=0x1000
+HOST_CPUFLAGS  := -m32 -DDMACU_RAM_ALIGNMENT=0x10000 -DDMACU_ROM_ALIGNMENT=0x10000
 HOST_OPTFLAGS  := -g -O1 -flto
 HOST_CFLAGS    := $(HOST_CPUFLAGS) $(COMMON_CPPFLAGS) -Wall -std=c99 -pedantic $(HOST_OPTFLAGS)
 
