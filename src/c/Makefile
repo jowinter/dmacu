@@ -79,8 +79,8 @@ MC_INCS        := $(MC_BINARIES:%.bin=%.inc)
 #
 
 # Build as 32 bit binary (PL080 emulation does currently not work on 64-bit)
-HOST_CC        := clang
-HOST_CPUFLAGS  := -m32 -DDMACU_RAM_ALIGNMENT=0x10000 -DDMACU_ROM_ALIGNMENT=0x10000
+HOST_CC        := clang -m32
+HOST_CPUFLAGS  := -DDMACU_RAM_ALIGNMENT=0x10000 -DDMACU_ROM_ALIGNMENT=0x10000
 HOST_OPTFLAGS  := -g -O1 -flto
 HOST_CFLAGS    := $(HOST_CPUFLAGS) $(COMMON_CPPFLAGS) -Wall -std=c99 -pedantic $(HOST_OPTFLAGS)
 
