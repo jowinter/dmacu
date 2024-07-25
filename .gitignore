@@ -53,3 +53,12 @@ dkms.conf
 
 # Backup files
 *~
+
+# csolution/cbuild
+/out
+/tmp
+*.cbuild.yml
+*.cbuild-idx.yml
+*.cbuild-set.yml
+*.cprj
+.clangd

@@ -1,0 +1,24 @@
+solution:
+  created-for: CMSIS-Toolbox@2.3.0
+  description: Ports of the DMACU firmware
+  cdefault:
+
+  target-types:
+    - type: LPC1769
+      device: LPC1769
+
+  build-types:
+    - type:       Debug
+      debug:      on
+      optimize:   none
+      warnings:   all
+      language-C: c99
+
+    - type:       Release
+      debug:      off
+      optimize:   balanced
+      warnings:   all
+      language-C: c99
+
+  projects:
+    - project: src/c/ports/lpc176x/lpc176x.cproject.yml

@@ -165,7 +165,7 @@ void SysTick_Handler(void)
         else
         {
             // Toggle the heart-beat PWM counter
-            gSoftPwmDutyCycle = (SOFT_PWM_LED_DARK == gSoftPwmDutyCycle) ? SOFT_PWM_LED_BRIGHT : SOFT_PWM_LED_DARK;4
+            gSoftPwmDutyCycle = (SOFT_PWM_LED_DARK == gSoftPwmDutyCycle) ? SOFT_PWM_LED_BRIGHT : SOFT_PWM_LED_DARK;
             gHeartBeatCounter = HEARTBEAT_RELOAD - 1u;
             gRemainingHeartBeats -= 1u;
         }
