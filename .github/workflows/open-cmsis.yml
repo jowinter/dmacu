@@ -58,3 +58,14 @@ jobs:
         run: |
           echo "Building with toolchain: ${{ matrix.toolchain }}"
           cbuild dmacu.csolution.yml --packs --toolchain ${{ matrix.toolchain }}
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dmacu-snapshot-${{ matrix.toolchain }}-${{ matrix.build_type }}
+          archive: true
+          if-no-files-found: warn
+          path: |
+            src/c/*.elf
+            out/**/*_demo.axf
+            out/**/*_demo.hex
