@@ -34,7 +34,7 @@ jobs:
 
       - name: Install system packages
         run: |
-          sudo apt-get install gcc-multilib g++-multilib qemu-system-arm qemu-i386
+          sudo apt-get install gcc-multilib g++-multilib qemu-system-arm qemu-user
 
       # Compile smoke test for x86 host emulator first
       - name: Build 32-bit host (x86) simulation target
