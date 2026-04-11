@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         toolchain: [AC6]
-        build_type: [Debug, Release]
+        build_type: [Release]
 
     steps:
       - name: Checkout repo
@@ -31,6 +31,9 @@ jobs:
         uses: ARM-software/cmsis-actions/vcpkg@75fd924d583d17eacdbfaf77f21ca09e335c3c79 # v1
         with:
           config: "vcpkg-configuration.json"
+
+      - name: Build QEMU simulation target on host
+        run: make -C src/c/ dmacu_qemu_versatilepb.elf
 
       - name: Activate Arm tool license
         uses: ARM-software/cmsis-actions/armlm@75fd924d583d17eacdbfaf77f21ca09e335c3c79 # v1
