@@ -27,27 +27,31 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Install tools
-        uses: ARM-software/cmsis-actions/vcpkg@75fd924d583d17eacdbfaf77f21ca09e335c3c79 # v1
-        with:
-          config: "vcpkg-configuration.json"
-
-      # Currently disabled (no g++-multilib / clang yet)
-      #
-      # - name: Build 32-bit host (x86) simulation target
-      #   run: make -C src/c/ hostemu32.elf
-
-      - name: Build QEMU (versatilepb) simulation target
-        run: make -C src/c/ dmacu_qemu_versatilepb.elf
-
-      - name: Activate Arm tool license
-        uses: ARM-software/cmsis-actions/armlm@75fd924d583d17eacdbfaf77f21ca09e335c3c79 # v1
-
-      - name: Set up Python
+      - name: Set up Python 3.13
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
 
+      - name: Install system packages
+        run: |
+          sudo apt-get install gcc-multilib g++-multilib qemu-system-arm qemu-i386
+
+      # Compile smoke test for x86 host emulator first
+      - name: Build 32-bit host (x86) simulation target
+        run: make -C src/c/ hostemu32.elf
+
+      - name: Install ARM tools
+        uses: ARM-software/cmsis-actions/vcpkg@v1
+        with:
+          config: "vcpkg-configuration.json"
+
+      # Compile QEMU simulation target (with install arm-none-eabi-gcc) first
+      - name: Build QEMU (versatilepb) simulation target
+        run: make -C src/c/ dmacu_qemu_versatilepb.elf
+
+      - name: Activate Arm tool license
+        uses: ARM-software/cmsis-actions/armlm@v1
+      
       - name: Build DMACU demo hardware ports with ${{ matrix.toolchain }}
         working-directory: .
         run: |
