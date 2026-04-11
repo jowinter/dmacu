@@ -3,7 +3,7 @@ project:
   compiler: AC6
 
   packs:
-    - pack: Keil::LPC1700_DFP@2.7.2
+    - pack: NXP::LPC845_DFP@16.0.0
     - pack: ARM::CMSIS@5.9.0
 
   groups:
@@ -19,7 +19,7 @@ project:
 
     - group: port
       files:
-        - file: lpc176x.c
+        - file: lpc84x.c
 
     - group: mc
       files:
@@ -27,24 +27,26 @@ project:
         - file: ../../vcpu/mc/demo.data.inc
 
   add-path:
-  - ../../vcpu
+    - ../../vcpu
 
   define:
-  - DMACU_ROM_ALIGNMENT: "0x4"
-  - DMACU_VIRTUAL_PL080: "0"
-  - DMACU_QUIET: "1"
+    - DMACU_ROM_ALIGNMENT: "0x4"
+    - DMACU_VIRTUAL_PL080: "0"
+    - DMACU_QUIET: "1"
 
   linker:
-    - for-compiler: AC6      
-      script: lpc176x.sct
+    - for-compiler: AC6
+      script: lpc84x.sct
       define:
         - DMACU_VIRTUAL_PL080: 0
 
   output:
     type:
-    - elf
-    - hex
+      - elf
+      - hex
 
   components:
     - component: ARM::CMSIS:CORE
-    - component: Keil::Device:Startup
+    - component: NXP::Device:Startup
+    - component: NXP::Device:CMSIS:LPC845_system@1.0.0
+    - component: NXP::Device:CMSIS:LPC845_header
