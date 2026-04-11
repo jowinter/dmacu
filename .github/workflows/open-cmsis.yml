@@ -32,8 +32,10 @@ jobs:
         with:
           config: "vcpkg-configuration.json"
 
-      - name: Build 32-bit host (x86) simulation target
-        run: make -C src/c/ hostemu32.elf
+      # Currently disabled (no g++-multilib / clang yet)
+      #
+      # - name: Build 32-bit host (x86) simulation target
+      #   run: make -C src/c/ hostemu32.elf
 
       - name: Build QEMU (versatilepb) simulation target
         run: make -C src/c/ dmacu_qemu_versatilepb.elf
