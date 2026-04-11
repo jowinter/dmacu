@@ -13,6 +13,7 @@
  * thereof works). To run it on a native 64-bit environment one can alway's resort to QEMU's i386 user-mode
  * emulator (qemu-i386)
  */
+#define DMACU_ARCH_DETAILS 1
 #include <dmacu.h>
 #include "pl080.h"
 

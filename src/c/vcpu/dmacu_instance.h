@@ -14,6 +14,11 @@
 #ifndef DMACU_INSTANCE_H_
 #define DMACU_INSTANCE_H_ 1
 
+// We require low-level details
+#if !defined(DMACU_ARCH_DETAILS) || (DMACU_ARCH_DETAILS == 0)
+# error "dmacu_instance.h depends on low-level architecture details (define DMACU_ARCH_DETAILS as non-zero before include this header)"
+#endif
+
 // Common types and entrypoint for the main instance.
 #include "dmacu.h"
 
@@ -37,7 +42,7 @@
 #endif
 
 //-------------------------------------------------------------------------------------------------
-// Basic DMA descriptors (PL080)
+// Basic DMA descriptors (on top of hardware layer)
 //
 
 /// \brief Concatenates a name with arguments @p a and @p b expanded.
@@ -52,11 +57,6 @@
 /// \brief Constructs the name of a global descriptor or object
 #define Dma_Global_Name(_self) \
     Dma_Concat_Name(DMA_INSTANCE_PREFIX, _self)
-
-/// \brief Defines an externally visible DMA descriptor
-#define Dma_Define_Descriptor(_self,...) \
-    DMACU_ALIGNED(16u) \
-    DMACU_PRIVATE Dma_Descriptor_t Dma_Global_Name(_self) = { __VA_ARGS__ };
 
 /// \brief Constructs the name of a local descriptor or object.
 #define Dma_Local_Name(_self,_suffix) \
@@ -78,29 +78,12 @@
 #define Dma_Local_Reference(_self,_suffix) \
     (&Dma_Local_Name(Dma_Global_Name(_self), _suffix))
 
-/// \brief Common DMA copy core operation
-///
-/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
-///
-/// width indicates the source/destination transfer width in PL080's log-2 encoding:
-///  - width=0 generates a byte copy
-///  - width=1 generates a half-word (16-bit) copy
-///  - width=2 generates a word (32-bit) copy
-///
-#define Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,_width) \
-    _qual Dma_Define_Descriptor(_self, \
-        .src  = (Dma_UIntPtr_t) (_src), \
-        .dst  = (Dma_UIntPtr_t) (_dst), \
-        .lli  = (Dma_UIntPtr_t) (_lli), \
-        .ctrl = UINT32_C(0x0C000000) + (((_width) & 0x3u) << 21u) + (((_width) & 0x3u) << 18u) + (uint32_t) (_size) \
-    )
-
 /// \brief Basic byte (8-bit) wise DMA copy operation
 ///
 /// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
 ///
 #define Dma_ByteCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,0u)
+    Dma_Arch_Copy_Core(_qual,_self,_dst,_src,_size,_lli,0u)
 
 // Patchable version of Dma_ByteCopy
 #define Dma_ByteCopy(_self,_dst,_src,_size,_lli) \
@@ -116,7 +99,7 @@
 /// Size give the number of 16-bit half-words to copy
 ///
 #define Dma_HalfWordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,1u)
+    Dma_Arch_Copy_Core(_qual,_self,_dst,_src,_size,_lli,1u)
 
 // Patchable version of Dma_HalfWordCopy
 #define Dma_HalfWordCopy(_self,_dst,_src,_size,_lli) \
@@ -132,7 +115,7 @@
 /// Size give the number of 32-bit words to copy
 ///
 #define Dma_WordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_Copy_Core(_qual,_self,_dst,_src,_size,_lli,2u)
+    Dma_Arch_Copy_Core(_qual,_self,_dst,_src,_size,_lli,2u)
 
 // Patchable version of Dma_WordCopy
 #define Dma_WordCopy(_self,_dst,_src,_size,_lli) \
@@ -142,46 +125,13 @@
 #define Dma_FixedWordCopy(_self,_dst,_src,_size,_lli) \
     Dma_WordCopy_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
 
-/// \brief Basic byte-wise DMA fill operation.
-///
-/// Fills a block of "size" bytes at "dst" with the byte found at "src". Then links to the
-/// next descriptor at "lli".
-///
-#define Dma_ByteFill_Core(_qual,_self,_dst,_src,_size,_lli) \
-    _qual Dma_Define_Descriptor(_self, \
-        .src  = (Dma_UIntPtr_t) (_src), \
-        .dst  = (Dma_UIntPtr_t) (_dst), \
-        .lli  = (Dma_UIntPtr_t) (_lli), \
-        .ctrl = UINT32_C(0x08000000) + (uint32_t) (_size) \
-    )
-
 // Fixed (non-patchable) version of Dma_ByteFill
 #define Dma_ByteFill(_self,_dst,_src,_size,_lli) \
-    Dma_ByteFill_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
+    Dma_Arch_ByteFill_Core(DMACU_READWRITE,_self,_dst,_src,_size,_lli)
 
 // Fixed (non-patchable) version of Dma_ByteFill
 #define Dma_FixedByteFill(_self,_dst,_src,_size,_lli) \
-    Dma_ByteFill_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
-
-
-/// \brief Common DMA copy core operation (with terminal count interrupt)
-///
-/// Copies "size" bytes from "src" to "dst". Then links to the next descriptor at "lli".
-///
-/// width indicates the source/destination transfer width in PL080's log-2 encoding:
-///  - width=0 generates a byte copy
-///  - width=1 generates a half-word (16-bit) copy
-///  - width=2 generates a word (32-bit) copy
-///
-/// This version of the copy operation triggers a terminal count interrupt (if enabled).
-///
-#define Dma_TerminalCopy_Core(_qual,_self,_dst,_src,_size,_lli,_width) \
-    _qual Dma_Define_Descriptor(_self, \
-        .src  = (Dma_UIntPtr_t) (_src), \
-        .dst  = (Dma_UIntPtr_t) (_dst), \
-        .lli  = (Dma_UIntPtr_t) (_lli), \
-        .ctrl = UINT32_C(0x8C000000) + (((_width) & 0x3u) << 21u) + (((_width) & 0x3u) << 18u) + (uint32_t) (_size) \
-    )
+    Dma_Arch_ByteFill_Core(DMACU_READONLY,_self,_dst,_src,_size,_lli)
 
 /// \brief Basic word (32-bit) wise DMA copy operation (with terminal count interrupt)
 ///
@@ -189,7 +139,7 @@
 /// Size give the number of 32-bit words to copy
 ///
 #define Dma_TerminalWordCopy_Core(_qual,_self,_dst,_src,_size,_lli) \
-    Dma_TerminalCopy_Core(_qual,_self,_dst,_src,_size,_lli,2u)
+    Dma_Arch_TerminalCopy_Core(_qual,_self,_dst,_src,_size,_lli,2u)
 
 // Patchable version of Dma_TerminalWordCopy (with terminal count interrupt)
 #define Dma_TerminalWordCopy(_self,_dst,_src,_size,_lli) \

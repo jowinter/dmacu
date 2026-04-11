@@ -1,0 +1,151 @@
+; #!armclang --target=arm-arm-none-eabi -march=armv7-m -E -x c
+;
+; Scatter-loading descriptor for the LPC84x C
+;
+; Adapted from uVision generated scatter-loading description file
+; to accomodate for compact placement of DMACU content.
+
+; LR_IROM1 0x00000000 0x00010000
+; {
+;   ER_IROM1 0x00000000 0x10000
+;   {
+;    * (.isr_vector,+FIRST)
+;    ; *.o (RESET, +First)
+;    *(InRoot$$Sections)
+;    .ANY (+RO)
+;    .ANY (+XO)
+;   }
+; 
+; .ANY (+RW +ZI)
+;     *(RamFunction)
+; 	
+;   RW_IRAM1 0x10000000 0x00008000
+;   {
+; 	; Normal (ARM-side) content
+; 	.ANY (+RW +ZI)
+;   }
+; 
+;   RW_IRAM2 0x2007C000 0x00004000
+;   {
+; 	; DMACU descriptors (we let the scatter-loader load all
+; 	; patchable and read-only descriptors to this segment to
+; 	; minimize interference with the ARM CPU and the flash).
+; 	;
+; 	; NOTE: Placement of our DMA descriptors in the AHB SRAM allows
+; 	; the PL080 controller to resume operating while the CPU is in WFE.
+; 	; (cf. [UM10360; "4.8.1 Sleep Mode"])
+; 	;
+; 	*(.rodata.Dmacu*)
+; 	*(.data.Dmacu*)
+; 	*(.bss.Dmacu*)
+; 
+; 	; Lookup tables
+; 	*(.rodata.Lut_*)
+; 
+; 	; Test program (flash is not accessible in sleep mode - i.e. during WFE)
+; 	*(.rodata.gTestProgram)
+; 
+; #if (DMACU_VIRTUAL_PL080 != 0)
+; 	; Slave CPU (for virtual PL080 operation)
+; 	*(.rodata.SlaveCpu*)
+; 	*(.data.SlaveCpu*)
+; 	*(.bss.SlaveCpu*)
+; 
+; 	; Microcode for the virtual PL080
+; 	*(.rodata.gVirtualPL080Code)
+; #endif
+;   }
+; 
+;   RW_IRAM3 0x20080000 0x00004000
+;   {
+; 	; RAM segment for the DMACU is placed at a 64k boundary
+; 	*(.bss.gTestRam +FIRST)
+;   }
+; }
+
+
+/* Sizes */
+#if (defined(__stack_size__))
+  #define Stack_Size                   __stack_size__
+#else
+  #define Stack_Size                   0x0400
+#endif
+
+#define Heap_Size                      0x0000
+
+#define  m_interrupts_start            0x00000000
+#define  m_interrupts_size             0x00000200
+
+#define  m_crp_start                   0x000002FC
+#define  m_crp_size                    0x00000004
+
+#define  m_text_start                  0x00000300
+#define  m_text_size                   0x0000FD00
+
+#define  m_data_start                  0x10000000
+#define  m_data_size                   0x00003FE0
+
+LR_FLASH 0x00000000 0x00010000 
+{   	
+  ER_IROM1 +0
+  {
+    *(.isr_vector, +FIRST)
+    *(InRoot$$Sections)
+
+    .ANY (+RO)
+    .ANY (+XO)
+  }
+
+  DMACU_UCODE  0x00002000 FIXED PADVALUE 0x00000000 0x00001000
+  {
+ 	; Test program (flash is not accessible in sleep mode - i.e. during WFE)
+ 	*(.rodata.gTestProgram)
+  }
+
+
+  DMACU_RODATA 0x00004000 FIXED PADVALUE 0xFFFFFFFF 0x00003000
+  {
+	; Fixed descriptors
+	*(.rodata.Dmacu*)
+
+ 	; Lookup tables
+ 	*(.rodata.Lut_*)
+
+#if (DMACU_VIRTUAL_PL080 != 0)
+ 	; Slave CPU (for virtual PL080 operation)
+ 	*(.rodata.SlaveCpu*)
+ 
+ 	; Microcode for the virtual PL080
+ 	*(.rodata.gVirtualPL080Code)
+#endif
+  }  
+
+  DMACU_SCRATCH 0x10000000 0x00001000
+  {
+   	; RAM segment for the DMACU is placed at a 64k boundary
+   	*(.bss.gTestRam +FIRST)
+  }
+
+  DMACU_DATA    0x10001000 0x00001C00
+  {
+   	*(.data.Dmacu*)
+   	*(.bss.Dmacu*)
+ 
+  
+#if (DMACU_VIRTUAL_PL080 != 0)
+   	; Slave CPU (for virtual PL080 operation)
+   	*(.data.SlaveCpu*)
+   	*(.bss.SlaveCpu*) 
+#endif
+  }
+
+  RW_IRAM1 0x10002C00 0x00000400
+  {
+	  .ANY (+RW +ZI)
+  }
+
+  ARM_LIB_STACK +0 EMPTY (Heap_Size + Stack_Size)
+  { 
+	  ; Stack region growing down
+  }
+}

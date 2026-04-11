@@ -1,0 +1,52 @@
+project:
+  description: DMACU port to NXP LPC1769 on LPCxpresso1769 eval board
+  compiler: AC6
+
+  packs:
+    - pack: NXP::LPC845_DFP@16.0.0
+    - pack: ARM::CMSIS@5.9.0
+
+  groups:
+    - group: vcpu
+      files:
+        - file: ../../vcpu/dmacu.h
+        - file: ../../vcpu/dmacu_instance.c
+        - file: ../../vcpu/dmacu_instance.h
+        - file: ../../vcpu/dmacu_shared.c
+        - file: ../../vcpu/rt.c
+        - file: ../../vcpu/utils.c
+        - file: ../../vcpu/vpl080.c
+
+    - group: port
+      files:
+        - file: lpc84x.c
+
+    - group: mc
+      files:
+        - file: ../../vcpu/mc/demo.code.inc
+        - file: ../../vcpu/mc/demo.data.inc
+
+  add-path:
+    - ../../vcpu
+
+  define:
+    - DMACU_ROM_ALIGNMENT: "0x4"
+    - DMACU_VIRTUAL_PL080: "0"
+    - DMACU_QUIET: "1"
+
+  linker:
+    - for-compiler: AC6
+      script: lpc84x.sct
+      define:
+        - DMACU_VIRTUAL_PL080: 0
+
+  output:
+    type:
+      - elf
+      - hex
+
+  components:
+    - component: ARM::CMSIS:CORE
+    - component: NXP::Device:Startup
+    - component: NXP::Device:CMSIS:LPC845_system@1.0.0
+    - component: NXP::Device:CMSIS:LPC845_header

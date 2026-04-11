@@ -1,0 +1,7 @@
+{
+    "targetSet": {
+        "dmacu": {
+            "activeTargetType": "LPC1769"
+        }
+    }
+}

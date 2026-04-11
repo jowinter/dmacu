@@ -11,6 +11,7 @@
  * @file dmacu.c
  * @brief Virtual CPU emulator core (PL080 backend)
  */
+#define DMACU_ARCH_DETAILS 1
 #include "dmacu_instance.h"
 
 //-------------------------------------------------------------------------------------------------

@@ -1,0 +1,77 @@
+#!armclang --target=arm-arm-none-eabi -mcpu=cortex-m0plus -E -x c
+/*
+** ###################################################################
+**     Processors:          LPC845M301JBD48
+**                          LPC845M301JBD64
+**                          LPC845M301JHI33
+**                          LPC845M301JHI48
+**
+**     Compiler:            Keil ARM C/C++ Compiler
+**     Reference manual:    LPC84x User manual Rev.1.6  8 Dec 2017
+**     Version:             rev. 1.0, 2017-10-17
+**     Build:               b200408
+**
+**     Abstract:
+**         Linker file for the Keil ARM C/C++ Compiler
+**
+**     Copyright 2016 Freescale Semiconductor, Inc.
+**     Copyright 2016-2020 NXP
+**     All rights reserved.
+**
+**     SPDX-License-Identifier: BSD-3-Clause
+**
+**     http:                 www.nxp.com
+**     mail:                 support@nxp.com
+**
+** ###################################################################
+*/
+
+
+/* Sizes */
+#if (defined(__stack_size__))
+  #define Stack_Size                   __stack_size__
+#else
+  #define Stack_Size                   0x0400
+#endif
+
+#if (defined(__heap_size__))
+  #define Heap_Size                    __heap_size__
+#else
+  #define Heap_Size                    0x0400
+#endif
+
+#define  m_interrupts_start            0x00000000
+#define  m_interrupts_size             0x00000200
+
+#define  m_crp_start                   0x000002FC
+#define  m_crp_size                    0x00000004
+
+#define  m_text_start                  0x00000300
+#define  m_text_size                   0x0000FD00
+
+#define  m_data_start                  0x10000000
+#define  m_data_size                   0x00003FE0
+
+LR_m_text m_interrupts_start m_text_start+m_text_size-m_interrupts_start {   ; load region size_region
+  VECTOR_ROM m_interrupts_start m_interrupts_size { ; load address = execution address
+    * (.isr_vector,+FIRST)
+  }
+
+  ER_m_crp m_crp_start FIXED m_crp_size { ; load address = execution address
+    * (.crp)
+  }
+
+  ER_m_text m_text_start FIXED m_text_size { ; load address = execution address
+    * (InRoot$$Sections)
+    .ANY (+RO)
+  }
+
+  RW_m_data m_data_start m_data_size-Stack_Size-Heap_Size { ; RW data
+    .ANY (+RW +ZI)
+    *(RamFunction)
+  }
+  ARM_LIB_HEAP +0 EMPTY Heap_Size {    ; Heap region growing up
+  }
+  ARM_LIB_STACK m_data_start+m_data_size EMPTY -Stack_Size { ; Stack region growing down
+  }
+}

@@ -1,0 +1,55 @@
+name: "Open-CMSIS-Pack: Build DMACU demo hardware ports (LPC1769, LPC84x)"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [multiarch]
+    paths:
+      - src/**
+      - dmacu.csolution.yml
+      - .github/workflows/open-cmsis.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: [AC6]
+        build_type: [Release]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Install tools
+        uses: ARM-software/cmsis-actions/vcpkg@75fd924d583d17eacdbfaf77f21ca09e335c3c79 # v1
+        with:
+          config: "vcpkg-configuration.json"
+
+      # Currently disabled (no g++-multilib / clang yet)
+      #
+      # - name: Build 32-bit host (x86) simulation target
+      #   run: make -C src/c/ hostemu32.elf
+
+      - name: Build QEMU (versatilepb) simulation target
+        run: make -C src/c/ dmacu_qemu_versatilepb.elf
+
+      - name: Activate Arm tool license
+        uses: ARM-software/cmsis-actions/armlm@75fd924d583d17eacdbfaf77f21ca09e335c3c79 # v1
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Build DMACU demo hardware ports with ${{ matrix.toolchain }}
+        working-directory: .
+        run: |
+          echo "Building with toolchain: ${{ matrix.toolchain }}"
+          cbuild dmacu.csolution.yml --packs --toolchain ${{ matrix.toolchain }}

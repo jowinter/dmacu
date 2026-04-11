@@ -1,0 +1,46 @@
+solution:
+  description: Ports of the DMACU firmware
+  cdefault:
+
+  target-types:
+    - type: LPC1769
+      device: NXP::LPC1769
+      target-set:
+        - set: debug
+          images:
+            - project-context: lpc176x_demo.Debug
+
+        - set: release
+          images:
+            - project-context: lpc176x_demo.Release
+
+    - type: LPC845
+      device: NXP::LPC845M301JBD48
+      target-set:
+        - set: debug
+          images:
+            - project-context: lpc84x_demo.Debug
+
+        - set: release
+          images:
+            - project-context: lpc84x_demo.Release
+
+  build-types:
+    - type: Debug
+      debug: on
+      optimize: none
+      warnings: all
+      language-C: c99
+
+    - type: Release
+      debug: on            # Always include symbolic debug info
+      optimize: balanced
+      warnings: all
+      language-C: c99
+
+  projects:
+    - project: ./src/c/ports/lpc176x/lpc176x_demo.cproject.yml
+      for-context: +LPC1769
+
+    - project: ./src/c/ports/lpc84x/lpc84x_demo.cproject.yml
+      for-context: +LPC845

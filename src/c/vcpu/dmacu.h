@@ -48,22 +48,8 @@
 # define DMACU_READWRITE
 #endif
 
-/// \brief 32-bit pointer type for the virtual CPU emulator.
-///
-typedef uint32_t Dma_UIntPtr_t;
-
-/// \brief PL080 DMA descriptor
-///
-/// \note See the PL080 DMA controller datasheet for details on the fields of the
-///    structure.
-///
-typedef struct Dma_Descriptor
-{
-    Dma_UIntPtr_t src; ///!< Source address of the transfer
-    Dma_UIntPtr_t dst; ///!< Destination address of the transfer
-    Dma_UIntPtr_t lli; ///!< Address of the next transfer in the chain
-    uint32_t ctrl;     ///!< Control bits and transfer size
-} Dma_Descriptor_t;
+// DMA controller hardware architecture
+#include "dmacu_arch_pl080.h"
 
 /// \brief Converts a C pointer to a 32-bit DMA address.
 ///
@@ -186,7 +172,8 @@ typedef struct Hal_Config
     /// Currently the following platform IDs are in use:
     ///
     /// - 0x00 ('\0') Host-based simulation
-    /// - 0x41 ('A')  LPCxpresso LPC1769 (or compatible) board.
+    /// - 0x41 ('A')  LPCxpresso LPC1769 (or compatible) board (PL080 DMA backend).
+    /// - 0x42 ('B')  LPC845 breakout board (or compatible) board (LPC84x DMA backend).
     /// - 0x51 ('Q')  QEMU simulating a versatilepb board.
     uint8_t platform_id;
 } Hal_Config_t;
@@ -194,8 +181,11 @@ typedef struct Hal_Config
 /// \brief Virtual "host" simulation platform.
 #define HAL_PLATFORM_HOST UINT8_C(0x00)
 
-/// \brief LPCxpress LPC1769 (or compatible) board.
+/// \brief LPCxpresso LPC1769 (or compatible) board.
 #define HAL_PLATFORM_LPCXPRESSO_1769 UINT8_C(0x41)
+
+/// \brief LPC845 breakout board (or compatible) board (LPC84x DMA backend).
+#define HAL_PLATFORM_LPC845_BRK      UINT8_C(0x42)
 
 /// \brief QEMU simulating a versatilepb board.
 #define HAL_PLATFORM_QEMU UINT8_C(0x51)

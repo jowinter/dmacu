@@ -1,0 +1,11 @@
+cbuild-pack:
+  resolved-packs:
+    - resolved-pack: ARM::CMSIS@5.9.0
+      selected-by-pack:
+        - ARM::CMSIS@5.9.0
+    - resolved-pack: Keil::LPC1700_DFP@2.7.2
+      selected-by-pack:
+        - Keil::LPC1700_DFP@2.7.2
+    - resolved-pack: NXP::LPC845_DFP@16.0.0
+      selected-by-pack:
+        - NXP::LPC845_DFP@16.0.0

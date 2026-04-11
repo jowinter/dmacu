@@ -1,0 +1,8 @@
+{
+	"files.watcherExclude": {
+		"**/target": true
+	},
+	"cmsis-csolution.autoDebugLaunch": false,
+	"debug.hideSlowPreLaunchWarning": true,
+	"debug.showInStatusBar": "never"
+}
