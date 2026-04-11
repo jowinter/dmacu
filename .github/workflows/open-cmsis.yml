@@ -46,7 +46,7 @@ jobs:
           python-version: '3.13'
 
       - name: Build DMACU demo hardware ports with ${{ matrix.toolchain }}
-        working-directory: ./Hello/
+        working-directory: .
         run: |
           echo "Building with toolchain: ${{ matrix.toolchain }}"
           cbuild dmacu.csolution.yml --packs --toolchain ${{ matrix.toolchain }}
